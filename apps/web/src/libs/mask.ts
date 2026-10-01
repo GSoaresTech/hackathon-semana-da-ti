@@ -7,8 +7,8 @@ import type { MaskitoOptions } from '@maskito/core';
  * valor do DOM diretamente, e o React Hook Form só enxerga a mudança pelo
  * evento `input`.
  *
- *   const cpfMaskRef = useMaskito({ options: cpfMaskOptions });
- *   <Input {...field} ref={cpfMaskRef} onInput={field.onChange} maxLength={14} />
+ *   const phoneMaskRef = useMaskito({ options: phoneMaskOptions });
+ *   <Input {...field} ref={phoneMaskRef} onInput={field.onChange} inputMode="tel" />
  *
  * No schema Zod, remova a máscara antes de enviar:
  *   .transform((value) => value.replace(/\D/g, ''))
@@ -16,47 +16,7 @@ import type { MaskitoOptions } from '@maskito/core';
 
 const digit = /\d/;
 
-export const cpfMaskOptions: MaskitoOptions = {
-  mask: [
-    ...Array(3).fill(digit),
-    '.',
-    ...Array(3).fill(digit),
-    '.',
-    ...Array(3).fill(digit),
-    '-',
-    digit,
-    digit,
-  ],
-};
-
-export const cnpjMaskOptions: MaskitoOptions = {
-  mask: [
-    digit,
-    digit,
-    '.',
-    ...Array(3).fill(digit),
-    '.',
-    ...Array(3).fill(digit),
-    '/',
-    ...Array(4).fill(digit),
-    '-',
-    digit,
-    digit,
-  ],
-};
-
+/** Celular com DDD: (81) 99999-9999 */
 export const phoneMaskOptions: MaskitoOptions = {
   mask: ['(', digit, digit, ')', ' ', ...Array(5).fill(digit), '-', ...Array(4).fill(digit)],
-};
-
-export const cepMaskOptions: MaskitoOptions = {
-  mask: [...Array(5).fill(digit), '-', ...Array(3).fill(digit)],
-};
-
-export const dateMaskOptions: MaskitoOptions = {
-  mask: [digit, digit, '/', digit, digit, '/', ...Array(4).fill(digit)],
-};
-
-export const numberMaskOptions: MaskitoOptions = {
-  mask: /^\d+$/,
 };

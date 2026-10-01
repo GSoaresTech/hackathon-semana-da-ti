@@ -13,7 +13,7 @@ async function health_case(): Promise<HealthCaseOutput> {
   try {
     await connection.raw('SELECT 1;');
     database_status = 'connected';
-  } catch (error) {
+  } catch {
     database_status = 'disconnected';
   }
 

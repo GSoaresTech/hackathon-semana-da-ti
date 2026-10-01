@@ -1,9 +1,7 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
 
 import { env } from '~/libs/env';
 import { jsonToCamelCase, jsonToSnakeCase } from '~/libs/utils';
-
-type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 /**
  * Instância única de HTTP do projeto. TODA chamada à API passa por aqui,
@@ -12,7 +10,7 @@ type RetryableRequestConfig = InternalAxiosRequestConfig & { _retry?: boolean };
  * Responsabilidades:
  * - Autenticação por cookie httpOnly (`withCredentials`), sem token em JS.
  * - Tradução do contrato: `camelCase` no front, `snake_case` no backend.
- * - Renovação de sessão em 401, com uma única tentativa por requisição.
+ * - Sessão expirada na área da unidade (401) → volta para o login.
  * - Normalização de qualquer falha em `Error` com mensagem exibível ao usuário.
  */
 const api = axios.create({
@@ -54,106 +52,27 @@ api.interceptors.request.use((config) => {
 });
 
 /**
- * Endpoint de renovação de sessão.
- *
- * `null` porque o backend deste projeto (idh-server) NÃO expõe refresh: o
- * cookie de sessão vale 1 dia e simplesmente expira. Com `null`, um 401 leva
- * direto para `/signin`.
- *
- * Se o seu backend tiver refresh, basta apontar aqui (ex.: `/sessions/refresh`)
- * — toda a mecânica abaixo (tentativa única, single-flight, serialização entre
- * abas) passa a valer sem mais nenhuma mudança.
+ * Só a área da unidade (`/unit`) tem sessão. Um 401 ali significa que o
+ * cookie expirou: volta para o login. No fluxo do paciente (anônimo) um 401
+ * nunca acontece — e o próprio login (POST /sessions) responde 401 para
+ * credencial errada, que precisa chegar ao formulário como erro comum.
  */
-const REFRESH_ENDPOINT: string | null = null;
+function shouldRedirectToSignIn(error: unknown): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!(error instanceof AxiosError) || error.response?.status !== 401) return false;
 
-/**
- * Um 401 nos próprios endpoints de sessão significa credencial inválida, não
- * sessão expirada. Tentar renovar aí geraria recursão.
- */
-function isAuthEndpoint(config?: InternalAxiosRequestConfig): boolean {
-  const url = config?.url ?? '';
-  const method = (config?.method ?? '').toLowerCase();
+  const isSignInRequest =
+    error.config?.url === '/sessions' && error.config?.method?.toLowerCase() === 'post';
 
-  if (REFRESH_ENDPOINT && url === REFRESH_ENDPOINT) return true;
-  if (url === '/sessions/authenticate') return true;
-
-  return url === '/sessions' && method === 'post';
-}
-
-const REFRESH_LOCK_NAME = 'session-refresh';
-const REFRESH_LAST_AT_KEY = 'app:lastSessionRefreshAt';
-const REFRESH_DEDUPE_WINDOW_MS = 60 * 1000;
-
-function getLastRefreshAt(): number {
-  try {
-    return Number(window.localStorage.getItem(REFRESH_LAST_AT_KEY) || 0);
-  } catch {
-    return 0;
-  }
-}
-
-function setLastRefreshAt(timestamp: number): void {
-  try {
-    window.localStorage.setItem(REFRESH_LAST_AT_KEY, String(timestamp));
-  } catch {
-    // localStorage indisponível (aba anônima, cookies bloqueados): seguimos sem
-    // o cache entre abas. O navigator.locks ainda protege a corrida.
-  }
-}
-
-async function performRefresh(): Promise<void> {
-  if (!REFRESH_ENDPOINT) throw new Error('Sessão expirada');
-
-  // Outra aba já renovou há pouco: o refresh_token dela foi rotacionado e o
-  // nosso já está obsoleto, então tentar de novo só causaria logout.
-  if (Date.now() - getLastRefreshAt() < REFRESH_DEDUPE_WINDOW_MS) return;
-
-  await api.post(REFRESH_ENDPOINT, {});
-  setLastRefreshAt(Date.now());
-}
-
-let refreshPromise: Promise<void> | null = null;
-
-function refreshSession(): Promise<void> {
-  if (!refreshPromise) {
-    // navigator.locks serializa a renovação entre abas do mesmo navegador: como
-    // o refresh_token é de uso único, duas abas renovando ao mesmo tempo fariam
-    // a segunda falhar (token já consumido) e deslogar o usuário.
-    const run =
-      typeof navigator !== 'undefined' && 'locks' in navigator
-        ? navigator.locks.request<void>(REFRESH_LOCK_NAME, () => performRefresh())
-        : performRefresh();
-
-    refreshPromise = run.finally(() => {
-      refreshPromise = null;
-    });
-  }
-
-  return refreshPromise;
+  return !isSignInRequest && window.location.pathname.startsWith('/unit');
 }
 
 function redirectToSignIn(): void {
-  if (typeof window === 'undefined') return;
-  if (window.location.pathname.startsWith('/signin')) return;
-
   // Navegação "dura" de propósito, e não `router.push`: recarregar a página
-  // descarta todo o estado em memória (cache do React Query, stores do
-  // Zustand, formulários abertos). Sem isso, dados do usuário cuja sessão
-  // acabou continuariam na tela depois do login de outra pessoa.
-  // Além disso, este módulo não é um componente — não há router aqui.
-  window.location.href = '/signin';
-}
-
-async function refreshSessionOrSignOut(): Promise<boolean> {
-  try {
-    await refreshSession();
-
-    return true;
-  } catch {
-    redirectToSignIn();
-
-    return false;
-  }
+  // descarta todo o estado em memória (cache do React Query, formulários
+  // abertos). Este módulo não é um componente — não há router aqui.
+  const redirect = encodeURIComponent(window.location.pathname);
+  window.location.href = `/signin?redirect=${redirect}`;
 }
 
 /**
@@ -199,29 +118,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const config = error?.config as RetryableRequestConfig | undefined;
-
-    const shouldTryRefresh =
-      typeof window !== 'undefined' &&
-      error instanceof AxiosError &&
-      error.response?.status === 401 &&
-      !!config &&
-      !config._retry &&
-      !isAuthEndpoint(config) &&
-      !window.location.pathname.startsWith('/signin');
-
-    if (shouldTryRefresh) {
-      config._retry = true;
-
-      if (REFRESH_ENDPOINT) {
-        if (await refreshSessionOrSignOut()) {
-          return api.request(config);
-        }
-      } else {
-        // Sem refresh disponível: a sessão acabou, não há o que recuperar.
-        redirectToSignIn();
-      }
-    }
+    if (shouldRedirectToSignIn(error)) redirectToSignIn();
 
     throw new Error(await toErrorMessage(error));
   },
@@ -238,4 +135,4 @@ function parseApiError(error: unknown): Promise<Error> {
   return toErrorMessage(error).then((message) => new Error(message));
 }
 
-export { api, parseApiError, refreshSessionOrSignOut };
+export { api, parseApiError };

@@ -1,58 +1,68 @@
-import type { Route } from 'next';
-
 /**
- * Papéis de acesso.
+ * Constantes de domínio do Triar.
  *
- * São números porque é assim que o backend armazena e compara. Nunca use o
- * literal (`role === 1`) no código — sempre `Roles.ADMINISTRATOR`.
+ * Os valores (`public`, `low`, `1`…) são os do contrato da API; os rótulos são
+ * os textos de tela do design system. Cor nunca vem sozinha: todo nível leva
+ * número + palavra e toda lotação leva ponto + palavra.
  */
-export enum Roles {
-  SYSTEM = 0,
-  ADMINISTRATOR = 1,
-  MANAGER = 2,
-  HR = 3,
-  EMPLOYEE = 4,
-}
 
-export const ROLES_OPTIONS = [
-  { value: Roles.SYSTEM, label: 'Sistema' },
-  { value: Roles.ADMINISTRATOR, label: 'Administrador' },
-  { value: Roles.MANAGER, label: 'Gestor' },
-  { value: Roles.HR, label: 'Recursos Humanos' },
-  { value: Roles.EMPLOYEE, label: 'Colaborador' },
-] as const;
+export type UrgencyLevel = 1 | 2 | 3 | 4 | 5;
+export type Network = 'public' | 'private';
+export type Occupancy = 'low' | 'medium' | 'high';
+export type UnitType = 'ubs' | 'upa' | 'emergency_room' | 'hospital' | 'clinic' | 'telemedicine';
+export type Onset = 'hours' | '1-2-days' | '3-7-days' | 'over-1-week';
+export type Pregnant = 'yes' | 'no' | 'not-applicable';
 
-/** Converte uma lista de opções em mapa `value → label` para exibição. */
-export function toLabelMap<T extends { value: string | number; label: string }>(
-  options: readonly T[],
-): Record<T['value'], string> {
-  return options.reduce(
-    (acc, option) => ({ ...acc, [option.value]: option.label }),
-    {} as Record<T['value'], string>,
-  );
-}
-
-export const ROLES_MAP = toLabelMap(ROLES_OPTIONS);
-
-/**
- * Predicados de permissão. Um por capacidade, não um por tela — assim uma tela
- * nova reaproveita o predicado em vez de inventar outra regra.
- */
-export function canManageUsers(role?: Roles): boolean {
-  return role === Roles.SYSTEM || role === Roles.ADMINISTRATOR || role === Roles.HR;
-}
-
-export function canManageSettings(role?: Roles): boolean {
-  return role === Roles.SYSTEM || role === Roles.ADMINISTRATOR;
-}
-
-/** Rota inicial após o login, por papel. */
-const ROLE_DEFAULT_ROUTES: Partial<Record<Roles, Route>> = {
-  [Roles.SYSTEM]: '/users',
-  [Roles.ADMINISTRATOR]: '/users',
-  [Roles.HR]: '/users',
+export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
+  1: 'Emergência',
+  2: 'Muito urgente',
+  3: 'Urgente',
+  4: 'Pouco urgente',
+  5: 'Não urgente',
 };
 
-export function getDefaultRouteByRole(role?: Roles): Route {
-  return (role !== undefined && ROLE_DEFAULT_ROUTES[role]) || '/dashboard';
-}
+export const NETWORK_LABELS: Record<Network, string> = {
+  public: 'SUS',
+  private: 'Plano',
+};
+
+export const OCCUPANCY_LABELS: Record<Occupancy, string> = {
+  low: 'Tranquila',
+  medium: 'Moderada',
+  high: 'Lotada',
+};
+
+export const UNIT_TYPE_LABELS: Record<UnitType, string> = {
+  ubs: 'UBS',
+  upa: 'UPA',
+  emergency_room: 'Pronto-socorro',
+  hospital: 'Hospital',
+  clinic: 'Clínica',
+  telemedicine: 'Teleconsulta',
+};
+
+export const ONSET_OPTIONS: { value: Onset; label: string }[] = [
+  { value: 'hours', label: 'Horas' },
+  { value: '1-2-days', label: '1–2 dias' },
+  { value: '3-7-days', label: '3–7 dias' },
+  { value: 'over-1-week', label: '+1 semana' },
+];
+
+export const ONSET_LABELS: Record<Onset, string> = {
+  hours: 'Há algumas horas',
+  '1-2-days': 'Há 1–2 dias',
+  '3-7-days': 'Há 3–7 dias',
+  'over-1-week': 'Há mais de 1 semana',
+};
+
+export const PREGNANT_OPTIONS: { value: Pregnant; label: string }[] = [
+  { value: 'yes', label: 'Sim' },
+  { value: 'no', label: 'Não' },
+  { value: 'not-applicable', label: 'Não se aplica' },
+];
+
+/** Ponto de partida quando a pessoa não permite a localização: centro de Caruaru-PE. */
+export const DEFAULT_COORDS = { lat: -8.2838, lng: -35.9761 };
+
+/** Emergência é sempre SAMU, inclusive na vertente privada. */
+export const EMERGENCY_PHONE = '192';

@@ -8,10 +8,11 @@
  * Convenção: membro em SCREAMING_SNAKE_CASE, valor em kebab-case.
  * Filtros vão no segundo item do array, nunca no nome da chave:
  *
- *   queryKey: [QUERIES.LIST_USERS, { page, search }]
+ *   queryKey: [QUERIES.LIST_UNITS, { level, network }]
  */
 export enum QUERIES {
-  GET_SESSION = 'get-session',
-  LIST_USERS = 'list-users',
-  GET_USER = 'get-user',
+  LIST_SYMPTOMS = 'list-symptoms',
+  LIST_UNITS = 'list-units',
+  CREATE_CARD = 'create-card',
+  GET_ME = 'get-me',
 }
