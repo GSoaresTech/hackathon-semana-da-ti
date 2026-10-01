@@ -3,7 +3,7 @@ services:
     container_name: triar_app_postgres
     image: postgres:16
     ports:
-      - '5432:5432'
+      - '5438:5432'
     environment:
       - POSTGRES_USER=docker
       - POSTGRES_PASSWORD=docker
