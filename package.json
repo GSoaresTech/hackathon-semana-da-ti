@@ -1,0 +1,29 @@
+{
+  "name": "triar-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "npm run tests:ci -w @triar-app/web --",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "ci:lint": "biome ci .",
+    "db:up": "docker compose up -d",
+    "migrate:latest": "npm run migrate:latest -w @triar-app/server",
+    "seed:run": "npm run seed:run -w @triar-app/server"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "turbo": "^2.11.6"
+  }
+}

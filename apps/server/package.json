@@ -1,0 +1,43 @@
+{
+  "name": "@triar-app/server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsup src --out-dir dist",
+    "typecheck": "tsc --noEmit",
+    "migrate:make": "NODE_OPTIONS='--import tsx' knex migrate:make",
+    "migrate:latest": "NODE_OPTIONS='--import tsx' knex migrate:latest",
+    "migrate:up": "NODE_OPTIONS='--import tsx' knex migrate:up",
+    "migrate:down": "NODE_OPTIONS='--import tsx' knex migrate:down",
+    "migrate:rollback": "NODE_OPTIONS='--import tsx' knex migrate:rollback",
+    "seed:make": "NODE_OPTIONS='--import tsx' knex seed:make",
+    "seed:run": "NODE_OPTIONS='--import tsx' knex seed:run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run test/e2e"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.10.0",
+    "fastify-type-provider-zod": "^7.0.0",
+    "knex": "^3.3.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

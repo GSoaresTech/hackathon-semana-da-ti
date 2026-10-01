@@ -1,0 +1,36 @@
+services:
+  database:
+    container_name: triar_app_postgres
+    image: postgres:16
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=triar_app
+    volumes:
+      - triar_app_database_data:/var/lib/postgresql/data
+    networks:
+      - default_network
+
+  database_test:
+    container_name: triar_app_postgres_test
+    image: postgres:16
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_DB=triar_app_test
+    volumes:
+      - triar_app_test_database_data:/var/lib/postgresql/data
+    networks:
+      - default_network
+
+volumes:
+  triar_app_database_data:
+  triar_app_test_database_data:
+
+networks:
+  default_network:
+    name: triar_app_network
