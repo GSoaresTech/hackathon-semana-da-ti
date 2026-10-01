@@ -13,6 +13,10 @@ const env_schema = z.object({
     .string()
     .default('http://localhost:3000')
     .transform((value) => value.split(',')),
+  SESSION_SECRET: z.string().min(16),
+  CARD_SECRET: z.string().min(16),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().min(1),
 });
 
 const _env = env_schema.safeParse(process.env);

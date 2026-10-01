@@ -1,70 +1,94 @@
-# Template de aplicação web
+# triar-app — web
 
-Template da equipe para novas aplicações web: Next.js 16 (App Router) + React
-19, TanStack Query, Zustand, React Hook Form + Zod v4, Axios e shadcn/ui sobre
-Tailwind v4.
+Front-end do **Triar**: app de pré-triagem mobile-first. A pessoa diz o que
+sente, o app classifica a urgência pelo Protocolo de Manchester (níveis 1 a 5)
+e mostra para onde ir — no SUS ou no plano. O app orienta e encaminha; não é
+diagnóstico.
 
-Vem com autenticação funcional, um CRUD de referência e documentação escrita
-para pessoas e para agentes de IA.
+Next.js 16 (App Router) + React 19, TanStack Query, Zustand, React Hook Form +
+Zod v4, Axios, Leaflet e shadcn/ui sobre Tailwind v4, seguindo o design system
+Triar v1.
 
 ## Começando
 
+Tudo roda a partir da **raiz do monorepo**:
+
 ```bash
-# na raiz do monorepo
 npm install
 cp apps/web/.env.example apps/web/.env    # ajuste os valores
-npm run dev -w @triar-app/web
+npm run start:dev                         # sobe web (porta 3000) e server
 ```
 
-O `.env` precisa de:
+O server precisa do banco e do seed antes (`npm run db:up`,
+`npm run migrate:latest`, `npm run seed:run`) — o passo a passo completo e os
+usuários de teste da recepção estão no [`README` da raiz](../../README.md).
+
+Para subir só o web: `npm run dev -w @triar-app/web` (o backend precisa estar
+rodando em `PRIVATE_API_URL`).
+
+O `apps/web/.env` precisa de:
 
 | Variável | Para quê |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | Base do axios no browser. Deixe `/api`. |
-| `PRIVATE_API_URL` | URL absoluta do backend. Alimenta o rewrite. |
-| `SESSION_SECRET` | **O mesmo `SECRET` do backend**, para verificar o JWT. |
+| `PRIVATE_API_URL` | URL absoluta do backend (ex.: `http://localhost:4000/api`). Alimenta o rewrite. |
+| `SESSION_SECRET` | **O mesmo `SESSION_SECRET` do server**, para verificar o JWT da recepção. |
+| `NEXT_PUBLIC_FILES_API_URL` | CDN de arquivos. Opcional. |
 
 A env é validada com Zod no `next.config.ts`: se faltar variável, o build falha
 listando o que está errado.
 
 ## Scripts
 
-Rode na raiz com `-w @triar-app/web` (ou dentro de `apps/web`).
+Na raiz do monorepo:
 
 | Comando | O que faz |
 |---|---|
-| `npm run dev` | Dev server na porta 3000. |
-| `npm run build` | Build de produção. |
-| `npm run typecheck` | Gera os tipos de rota e roda o `tsc`. |
-| `npm run tests:ci` | Playwright headless. |
-| `npm run tests:ui` | Playwright com interface. |
+| `npm run start:dev` | Dev de todos os apps (turbo). |
+| `npm run start:build` | Build de produção de todos os apps. |
+| `npm run typecheck` | Typecheck de todos os apps. |
+| `npm run lint` / `npm run format` | Biome: checa / corrige lint e formatação. |
+| `npm run test` | Testes automatizados — só do server. |
 
-Lint e formatação são do Biome, na raiz do monorepo (`npm run lint` / `npm run format`).
+Só o web, com `npm run <script> -w @triar-app/web`:
 
-Antes de commitar (na raiz): `npm run lint && npm run typecheck && npm run build`.
+| Script | O que faz |
+|---|---|
+| `dev` | Dev server na porta 3000. |
+| `build` | Build de produção. |
+| `start` | Serve o build. |
+| `typecheck` | Gera os tipos de rota e roda o `tsc`. |
+| `typegen` | Só gera os tipos de rota (`PageProps`, `LayoutProps`). |
 
-## Como usar como template
+O front não tem testes automatizados: as telas são testadas manualmente, no
+celular ou no modo responsivo do navegador.
 
-1. Clone e renomeie o projeto no `package.json`.
-2. Ajuste os papéis em [`src/libs/constants.ts`](src/libs/constants.ts) para o
-   seu domínio.
-3. Ajuste a navegação em [`src/libs/pages.ts`](src/libs/pages.ts) — é ela que
-   alimenta a sidebar **e** a proteção de rotas.
-4. Copie a pasta [`src/app/(private)/(dashboard)/users/`](<src/app/(private)/(dashboard)/users/>)
-   como molde para o primeiro CRUD e apague a de exemplo.
-5. Confira [`src/services/sessions.ts`](src/services/sessions.ts) contra o
-   contrato do seu backend.
+Antes de commitar (na raiz): `npm run lint && npm run typecheck && npm run start:build`.
 
-## O CRUD de referência
+## Telas
 
-`/users` demonstra, com código real, tudo que o template propõe:
+Fluxo do paciente (anônimo, em `src/app/(triage)/`):
 
-- listagem com busca, filtros, paginação e chips de filtro ativo;
-- `page.tsx` como Server Component compondo filhos client;
-- store Zustand para filtros, TanStack Query para os dados;
-- formulários de criação e edição com React Hook Form + Zod;
-- detalhe com `DataContainer` / `DataField`;
-- `loading.tsx` e estados de skeleton.
+| # | Tela | Rota |
+|---|---|---|
+| 01 | Início — aviso legal, rede (SUS/plano), localização | `/` |
+| 02 | Sintomas (1 de 3) — chips e relato livre | `/symptoms` |
+| 03 | Perguntas (2 de 3) — início, intensidade, idade, gestação | `/questions` |
+| 04 | Emergência — sinal grave, "Ligue 192 agora" | `/emergency` |
+| 05 | Resultado — nível, explicação, o que fazer | `/result` |
+| 06 | Unidades — mapa e lista por lotação e distância | `/units` |
+| 07 | Cartão de triagem (3 de 3) — QR para a recepção | `/card` |
+
+Recepção das unidades (em `src/app/(unit)/`):
+
+| Tela | Rota |
+|---|---|
+| Login por telefone + senha | `/signin` |
+| Lotação da unidade (Tranquila / Moderada / Lotada) | `/unit` |
+| Logout | `/signout` |
+
+O painel da unidade (tela 08, leitura do QR na recepção) ainda não foi
+implementado — ver [`docs/pending.md`](../../docs/pending.md) na raiz.
 
 ## Documentação
 
@@ -73,13 +97,18 @@ agentes de IA leem primeiro.
 
 | Documento | Assunto |
 |---|---|
+| [`docs/design-system.md`](docs/design-system.md) | Tokens, componentes, telas e princípios do design |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Estrutura de pastas, camadas, env |
-| [`docs/convencoes.md`](docs/convencoes.md) | Nomes, exports, imports, tipos |
+| [`docs/convencoes.md`](docs/convencoes.md) | Nomes, idioma, exports, imports, estilo |
 | [`docs/dados.md`](docs/dados.md) | Axios, services, TanStack Query |
 | [`docs/formularios.md`](docs/formularios.md) | React Hook Form + Zod v4 |
-| [`docs/estado.md`](docs/estado.md) | Zustand e a divisão de estado |
-| [`docs/componentes.md`](docs/componentes.md) | Padrão de subcomponentes, shadcn |
-| [`docs/autenticacao.md`](docs/autenticacao.md) | Sessão, `proxy.ts`, guards, papéis |
+| [`docs/estado.md`](docs/estado.md) | Zustand, o store da triagem e `sessionStorage` |
+| [`docs/componentes.md`](docs/componentes.md) | Padrão de subcomponentes, shadcn, acessibilidade |
+| [`docs/autenticacao.md`](docs/autenticacao.md) | Login da recepção, `proxy.ts`, sessão |
+
+As fontes da verdade do design são
+[`Triar-design-system.pdf`](../../docs/Triar-design-system.pdf) e
+[`Triar-telas.pdf`](../../docs/Triar-telas.pdf), em `docs/` na raiz.
 
 ## Notas sobre o Next 16
 
@@ -87,9 +116,9 @@ Mudou bastante em relação ao 15:
 
 - `middleware.ts` virou **`proxy.ts`** (export nomeado `proxy`, runtime `nodejs`).
 - `params`, `searchParams`, `cookies()` e `headers()` são **sempre assíncronos**.
-- Tipos de página vêm do `next typegen`: `PageProps<'/users/[userId]'>`.
+- Tipos de página vêm do `next typegen`: `PageProps<'/units'>`.
 - `typedRoutes` está ligado — `href` é validado em tempo de compilação.
-- Turbopack é o padrão; `next lint` não existe mais.
+- Turbopack é o padrão; `next lint` não existe mais (lint é do Biome).
 - Siga as regras do React Compiler: nada de `setState` em efeito (o Biome não as checa — é convenção).
 
 O [`.mcp.json`](../../.mcp.json) (na raiz do monorepo) registra o `next-devtools-mcp`, que dá aos agentes

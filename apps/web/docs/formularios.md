@@ -1,9 +1,22 @@
 # Formulários: React Hook Form + Zod
 
 Referência viva:
-[`create-user-form.tsx`](../src/components/forms/create-user-form.tsx) e
-[`update-user-form.tsx`](../src/components/forms/update-user-form.tsx).
-Ler os dois lado a lado é a forma mais rápida de pegar a convenção.
+[`components/forms/signin-form.tsx`](../src/components/forms/signin-form.tsx),
+o login da recepção. O comentário no topo dele é a receita resumida.
+
+## Quando é formulário e quando é passo do fluxo
+
+- **Formulário com validação e envio** (login, e qualquer cadastro futuro da
+  área `/unit`): React Hook Form + Zod + `zodResolver`, sempre.
+- **Passos da triagem** (`/symptoms`, `/questions`): **não** usam React Hook
+  Form. Cada resposta vai direto para o store `useTriage`, porque precisa
+  sobreviver à troca de tela e ao recarregamento (`sessionStorage`). O botão
+  "Continuar" fica desabilitado até a etapa estar completa — ver
+  [`questions-form.tsx`](<../src/app/(triage)/questions/questions-form.tsx>) e
+  [`estado.md`](estado.md).
+
+Não misture: duplicar o estado no RHF **e** no store é ter duas fontes de
+verdade.
 
 ## A receita
 
@@ -11,47 +24,50 @@ Ler os dois lado a lado é a forma mais rápida de pegar a convenção.
 'use client';
 
 // 1. Schema em escopo de módulo, no mesmo arquivo do formulário.
-const formSchema = z.object({
-  name: z.string({ error: 'Digite o nome' }).trim().min(2, { error: 'No mínimo 2 caracteres' }),
+const signInSchema = z.object({
+  phone: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ''))
+    .refine((value) => value.length === 10 || value.length === 11, {
+      error: 'Digite o telefone com DDD',
+    }),
+  password: z.string().min(1, { error: 'Digite sua senha' }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type SignInValues = z.input<typeof signInSchema>;
 
-const CreateUserForm: React.FC = () => {
+const SignInForm: React.FC<SignInFormProps> = ({ redirect }) => {
   // 2. useForm com zodResolver e defaultValues COMPLETO.
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { name: '' },
+  const form = useForm<SignInValues, unknown, z.output<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { phone: '', password: '' },
   });
 
   // 3. useMutation chamando a função de ~/services.
-  const { mutateAsync, isPending } = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERIES.LIST_USERS] });
-      router.push('/users');
-    },
-  });
+  const { mutateAsync, isPending } = useMutation({ mutationFn: createSession });
 
   // 4. Handler com guarda + toast.promise. Sem try/catch.
-  function handleCreateUser(values: FormValues) {
+  function onSubmit(values: z.output<typeof signInSchema>) {
     if (isPending) return;
 
     toast.promise(mutateAsync(values), {
-      loading: 'Cadastrando...',
-      success: 'Cadastrado com sucesso!',
-      error: (error) => error.message,
+      loading: 'Entrando…',
+      success: () => {
+        router.replace(target);
+        return 'Bem-vindo de volta';
+      },
+      error: (error: Error) => error.message,
     });
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleCreateUser)}>{/* ... */}</form>
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>{/* ... */}</form>
     </Form>
   );
 };
 
-export { CreateUserForm };
+export { SignInForm };
 ```
 
 ### Por que cada passo
@@ -60,9 +76,14 @@ export { CreateUserForm };
   extraia para `schema.ts`.
 - **`defaultValues` completo.** Campo que começa `undefined` monta um input não
   controlado; quando ganha valor, o React acusa a troca.
+- **`z.input` / `z.output` nos genéricos.** Quando o schema tem `transform`, o
+  valor do input (com máscara) e o validado (só dígitos) são tipos diferentes
+  para o RHF. Passar os dois deixa isso explícito.
 - **`if (isPending) return`.** Trava o duplo clique antes de a mutação começar.
 - **`toast.promise` em vez de `try/catch`.** O interceptor do axios já
   transformou a falha num `Error` com mensagem exibível.
+- **`noValidate`.** Quem valida é o Zod; a validação nativa do browser mostraria
+  balões fora do design.
 
 ## Zod v4 — o que mudou
 
@@ -81,34 +102,27 @@ z.string().url()                      z.url()
 ## Estrutura visual
 
 ```tsx
-<FormSection>                      {/* cabeçalho à esquerda, campos à direita */}
-  <FormSectionHeader>
-    <FormSectionTitle>Dados do colaborador</FormSectionTitle>
-    <FormSectionDescription>Informações básicas.</FormSectionDescription>
-  </FormSectionHeader>
+<form className="flex flex-col gap-4">
+  <FormField
+    control={form.control}
+    name="phone"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Telefone</FormLabel>
+        <FormControl><Input {...field} /></FormControl>
+        <FormMessage />        {/* erro do Zod aparece aqui */}
+      </FormItem>
+    )}
+  />
 
-  <FormSectionFields>
-    <FormFieldGroup>               {/* lado a lado; empilha no mobile */}
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Nome</FormLabel>
-            <FormControl><Input {...field} /></FormControl>
-            <FormDescription>Nome completo.</FormDescription>
-            <FormMessage />        {/* erro do Zod aparece aqui */}
-          </FormItem>
-        )}
-      />
-    </FormFieldGroup>
-  </FormSectionFields>
-</FormSection>
+  <Button type="submit" block>Entrar</Button>
+</form>
 ```
 
-`FormSection*` e `FormFieldGroup` são adições do projeto em
-[`src/components/ui/form.tsx`](../src/components/ui/form.tsx); o resto é shadcn
-padrão.
+Uma coluna, campos de 48px, botão `block` no fim — é uma tela de celular. Os
+blocos `FormSection*` e `FormFieldGroup` de
+[`ui/form.tsx`](../src/components/ui/form.tsx) existem para layouts em colunas
+(desktop), caso o painel da unidade precise.
 
 ## Armadilhas
 
@@ -118,16 +132,16 @@ padrão.
 
 ```ts
 // ❌ os genéricos do RHF divergem entre o valor do input e o validado
-email: z.string().transform((v) => v || null)
+note: z.string().transform((v) => v || null)
 
 // ✅ o schema valida, o handler adapta
-email: z.union([z.email({ error: 'E-mail inválido' }), z.literal('')])
+note: z.string()
 // e no handler:
-mutateAsync({ email: values.email || null })
+mutateAsync({ note: values.note || null })
 ```
 
 Transform que preserva o tipo (`string` → `string`, como tirar a máscara do
-CPF) é bem-vindo.
+telefone) é bem-vindo.
 
 ### Máscaras: `onInput`, não `onChange`
 
@@ -135,35 +149,24 @@ O Maskito escreve direto no DOM. O React Hook Form só enxerga a mudança pelo
 evento `input`:
 
 ```tsx
-const cpfMaskRef = useMaskito({ options: cpfMaskOptions });
+const phoneMaskRef = useMaskito({ options: phoneMaskOptions });
 
-<Input {...field} ref={cpfMaskRef} onInput={field.onChange} maxLength={14} />
+<Input
+  {...field}
+  ref={phoneMaskRef}
+  onInput={field.onChange}
+  inputMode="tel"
+  autoComplete="tel-national"
+/>
 ```
 
-E remova a máscara antes de enviar, no schema:
+As máscaras ficam em [`libs/mask.ts`](../src/libs/mask.ts). Remova a máscara
+antes de enviar, no schema (`.transform((value) => value.replace(/\D/g, ''))`).
 
-```ts
-cpf: z.string({ error: 'Digite o CPF' })
-  .transform((value) => value.replace(/\D/g, ''))
-  .refine(isValidCPF, { error: 'CPF inválido' })
-```
+### Teclado certo no celular
 
-### `<Select>` dentro do FormField
-
-`<FormControl>` envolve o **trigger**, não o `<Select>`:
-
-```tsx
-<FormItem>
-  <FormLabel>Situação</FormLabel>
-  <Select onValueChange={field.onChange} defaultValue={field.value}>
-    <FormControl>
-      <SelectTrigger><SelectValue /></SelectTrigger>
-    </FormControl>
-    <SelectContent>{/* ... */}</SelectContent>
-  </Select>
-  <FormMessage />
-</FormItem>
-```
+`inputMode="tel"` / `"numeric"` e `autoComplete` corretos não são detalhe: é
+o que abre o teclado numérico e deixa o gerenciador de senhas preencher.
 
 ### Hidratar formulário de edição uma vez só
 
@@ -171,11 +174,11 @@ cpf: z.string({ error: 'Digite o CPF' })
 const hydratedRef = useRef(false);
 
 useEffect(() => {
-  if (!userQuery.data || hydratedRef.current) return;
+  if (!query.data || hydratedRef.current) return;
 
-  form.reset({ name: userQuery.data.user.name });
+  form.reset({ name: query.data.unit.name });
   hydratedRef.current = true;
-}, [userQuery.data, form]);
+}, [query.data, form]);
 ```
 
 Sem o guarda, qualquer refetch chamaria `reset` de novo e apagaria o que a
@@ -185,7 +188,8 @@ render, e `setState` dentro de efeito é proibido neste projeto.
 ## Erros vindos do servidor
 
 O backend responde `{ error: 'mensagem' }` — uma mensagem só, sem detalhe por
-campo. Então erro de servidor aparece **no toast**, não embaixo do input.
+campo. Então erro de servidor aparece **no toast**, não embaixo do input
+(ex.: "Credenciais inválidas, tente novamente").
 
 Se um dia a API passar a devolver erros por campo, o lugar de mapear é um
 helper em `~/libs/api`, chamando `form.setError(campo, { message })`.
@@ -193,13 +197,12 @@ helper em `~/libs/api`, chamando `form.setError(campo, { message })`.
 ## Botão de submit
 
 ```tsx
-<Button type="submit" disabled={isPending} className="relative">
-  <span className={cn({ 'opacity-0': isPending })}>Cadastrar colaborador</span>
-  {isPending && (
-    <LoaderIcon className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin" />
-  )}
+<Button type="submit" block disabled={isPending}>
+  {isPending && <LoaderIcon className="animate-spin" aria-hidden="true" />}
+  Entrar
 </Button>
 ```
 
-O texto fica invisível em vez de ser removido: assim o botão mantém a largura e
-o layout não salta quando o envio começa.
+O texto continua visível (verbo no imperativo, caixa normal) e o ícone de
+carregamento entra ao lado. Nos passos do fluxo, o texto pode mudar para
+explicar a espera — "Avaliando seus sintomas…" em `/questions`.

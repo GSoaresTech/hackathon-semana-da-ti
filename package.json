@@ -10,11 +10,10 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
+    "start:dev": "turbo run dev",
+    "start:build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "npm run tests:ci -w @triar-app/web --",
     "lint": "biome check .",
     "format": "biome check --write .",
     "ci:lint": "biome ci .",

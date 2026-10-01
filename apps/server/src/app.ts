@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swagger_ui from '@fastify/swagger-ui';
@@ -13,9 +14,14 @@ import { error_handler_middleware } from '~/middlewares/error-handler-middleware
 import { app_routes } from '~/routes';
 
 async function create_app(): Promise<FastifyInstance> {
-  const app = fastify();
+  const app = fastify({
+    // O token do cartão de triagem (JWT) vai no path de GET /api/cards/:token.
+    routerOptions: { maxParamLength: 4096 },
+  });
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.register(cookie);
 
   app.register(cors, {
     origin: env.ORIGINS,
@@ -27,8 +33,8 @@ async function create_app(): Promise<FastifyInstance> {
       transform: jsonSchemaTransform,
       openapi: {
         info: {
-          title: 'Fastify Template',
-          description: 'Documentação da API do Fastify Template',
+          title: 'Triar API',
+          description: 'API de pré-triagem do Triar',
           version: '1.0.0',
         },
       },

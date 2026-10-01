@@ -9,6 +9,9 @@ export default defineConfig({
     include: ['test/**/*.spec.ts'],
     globalSetup: ['./test/global-setup.ts'],
     testTimeout: 30000,
+    // As specs compartilham o mesmo banco de teste: uma por vez evita que a
+    // limpeza de uma apague as fixtures da outra.
+    fileParallelism: false,
     env: {
       NODE_ENV: 'test',
     },

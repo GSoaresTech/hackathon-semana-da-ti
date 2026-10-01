@@ -1,192 +1,109 @@
-# Autenticação e controle de acesso
+# Autenticação
+
+## Quem precisa de login
+
+**O paciente não.** Todo o fluxo de `app/(triage)/` é anônimo: não há conta,
+cadastro nem cookie de sessão. O estado da triagem fica no `sessionStorage`
+(ver [`estado.md`](estado.md)).
+
+Só a **recepção das unidades** entra, para atualizar a lotação em `/unit`. É um
+login simples: telefone + senha, e cada conta pertence a uma unidade.
 
 ## O contrato do backend
 
-O `idh-server` usa **dois cookies httpOnly** e um login em **dois passos** —
-porque um usuário pode ter mais de um perfil (empresa/estabelecimento) e a
-sessão é sempre de um perfil específico.
-
 ```
-1. POST /sessions/authenticate  { cpf, password }   → cookie `authorization`
-2. GET  /users/me/profiles                          → perfis do usuário
-3. POST /sessions               { profileId }       → cookie `token`, limpa `authorization`
-4. DELETE /sessions                                 → limpa os dois
+POST   /api/sessions     { phone, password }   → cookie httpOnly `token`
+GET    /api/sessions/me                         → { user, unit }
+DELETE /api/sessions                            → limpa o cookie
 ```
 
-| Cookie | Conteúdo do JWT | Quando existe |
-|---|---|---|
-| `authorization` | `{ id }` | entre o passo 1 e o 3 |
-| `token` | `{ id, profile_id, company_id, role, situation, installation_id }` | sessão ativa |
+O cookie `token` é um JWT HS256 com `{ id, unit_id, name }`, assinado com o
+`SESSION_SECRET` do backend e válido por **12 horas**. Não existe endpoint de
+refresh: venceu, entra de novo.
 
-Ambos HS256, validade de 1 dia, assinados com o `SECRET` do backend.
+As funções ficam em [`src/services/sessions.ts`](../src/services/sessions.ts):
+`createSession`, `getMe` e `deleteSession`.
 
-**Não existe endpoint de refresh** e **não existe `GET /sessions`**. As duas
-ausências moldam o resto deste documento.
+## Verificando a sessão no servidor
 
-## Como a sessão chega à interface
+O JavaScript do browser **nunca** vê o JWT (httpOnly). Quem lê o cookie é o
+servidor do Next, em [`src/libs/session.ts`](../src/libs/session.ts):
 
-O cookie é httpOnly: o JavaScript do browser não consegue lê-lo. E o backend
-não oferece um endpoint para consultar a sessão atual. A solução é um Route
-Handler local:
+```ts
+interface Session {
+  userId: string;
+  unitId: string;
+  name: string;
+}
 
+verifySession(token?: string): Promise<Session | null>
 ```
-useSession()  →  GET /session  →  verifySession(cookie)  →  { session }
-   (client)      (nosso handler,      (jose, server-only)
-                  não o backend)
-```
 
-- [`src/app/session/route.ts`](../src/app/session/route.ts) — roda no servidor,
-  lê o cookie, verifica o JWT e devolve só o que a interface precisa.
-- [`src/libs/session.ts`](../src/libs/session.ts) — `verifySession`, com `jose`.
-  Normaliza o payload de `snake_case` para `camelCase` (o JWT não passa pelo
-  interceptor do axios).
-
-O handler fica em `/session` e **não** em `/api/session` de propósito: `/api/*`
-é reescrito para o backend no `next.config.ts`, e um handler ali dependeria da
-ordem de precedência entre rewrite e sistema de arquivos.
+- Usa `jose` com o **mesmo** `SESSION_SECRET` do backend — só para verificar,
+  nunca para emitir. Segredo diferente = todo token válido é rejeitado.
+- Verifica assinatura e expiração de verdade. Conferir só a presença do
+  cookie aceitaria um valor forjado por qualquer um.
+- Normaliza o payload (`unit_id` → `unitId`): o JWT não passa pelo interceptor
+  do axios.
+- É `server-only`. Client Component que precisa dos dados da sessão chama
+  `getMe()` com `useQuery` e `QUERIES.GET_ME` — é o que faz
+  [`unit-occupancy.tsx`](<../src/app/(unit)/unit/unit-occupancy.tsx>).
 
 ## O proxy (antigo middleware)
 
 No Next 16 o arquivo chama-se **`proxy.ts`** e a função exportada, **`proxy`**.
-O runtime é sempre `nodejs` e não é configurável — o que aqui é vantagem: dá
-para verificar o JWT com `jose` sem restrição de edge runtime.
+O runtime é sempre `nodejs`, o que permite verificar o JWT com `jose`.
 
-[`src/proxy.ts`](../src/proxy.ts) faz, em ordem:
+[`src/proxy.ts`](../src/proxy.ts) faz duas coisas:
 
-1. Verifica o cookie de sessão (assinatura e expiração de verdade — **não**
-   apenas a presença do cookie, que qualquer um pode forjar).
-2. `/` → redireciona conforme o papel, ou para `/signin`.
-3. `/signin` com sessão válida → manda para a rota inicial do papel.
-4. Procura o caminho em [`src/libs/pages.ts`](../src/libs/pages.ts).
-   **Rota não registrada é pública.**
-5. Sem sessão numa rota registrada → `/signin?redirect=<destino>`.
-6. Com sessão mas sem papel suficiente → rota inicial do papel.
-
-### O `matcher` não é opcional
+1. `/unit/**` sem sessão válida → `/signin?redirect=<destino>`.
+2. `/signin` com sessão válida → `/unit`.
 
 ```ts
+const PROTECTED_PATHS = [/^\/unit(\/.*)?$/];
+
 export const config = {
-  matcher: ['/((?!api|session|_next/static|_next/image|.*\\.[\\w]+$).*)'],
+  matcher: ['/unit/:path*', '/signin'],
 };
 ```
 
-Sem ele o proxy roda em **toda** requisição — incluindo assets estáticos e
-prefetches de navegação —, verificando JWT à toa e adicionando latência a cada
-link que o usuário passa o mouse por cima.
+O `matcher` restrito é de propósito: o fluxo do paciente não paga o custo de
+verificar JWT a cada navegação. **Rota nova da recepção vai dentro de
+`/unit`** — assim ela já nasce protegida, sem mexer no proxy.
 
-## Registrar uma rota protegida
+> O proxy é **UX, não autorização**. Ele evita renderizar uma tela que a pessoa
+> não pode ver; quem autoriza de verdade (por exemplo, se esta unidade pode
+> mudar aquela lotação) é o backend.
 
-Proteção não vem da pasta. Estar em `app/(private)/` não protege nada. O que
-protege é o registro em [`src/libs/pages.ts`](../src/libs/pages.ts):
+## Login
 
-```ts
-{
-  id: 'users',
-  title: 'Colaboradores',
-  url: '/users',
-  icon: UsersIcon,
-  regex: /^\/users(\/.*)?$/,          // pega a rota e as subrotas
-  roles: [Roles.SYSTEM, Roles.ADMINISTRATOR, Roles.HR],
-}
-```
+[`components/forms/signin-form.tsx`](../src/components/forms/signin-form.tsx):
+máscara de telefone com Maskito, `createSession` e, no sucesso,
+`router.replace` para o `?redirect=` seguido de `router.refresh()`.
 
-Uma entrada só alimenta três coisas: o item da sidebar, a proteção no proxy e o
-filtro de papéis. Fonte única — menu e guarda não conseguem discordar.
+O `redirect` só é aceito se começar com `/unit`. Qualquer outro valor cai em
+`/unit` — sem isso, `?redirect=https://site-falso` viraria um *open redirect*.
 
-Cuidado com o `regex`: `/^\/users$/` protegeria só a listagem e deixaria
-`/users/123` aberta.
+## Sessão expirada
 
-## Guards na interface
+1. Uma chamada da área `/unit` volta 401.
+2. O interceptor de [`src/libs/api.ts`](../src/libs/api.ts) manda para
+   `/signin?redirect=<página atual>`.
 
-```tsx
-<RouteGuard roles={[Roles.SYSTEM, Roles.ADMINISTRATOR]}>
-  <Container>{/* ... */}</Container>
-</RouteGuard>
-```
+Duas exceções, de propósito:
 
-O proxy já barra o acesso direto pela URL. O `RouteGuard` cobre a **navegação
-client-side**, que não passa pelo proxy.
+- **Só redireciona se a página atual começa com `/unit`.** O fluxo do paciente
+  é anônimo e não deve ser jogado para um login que não é dele.
+- **`POST /sessions` com 401 não redireciona**: é senha errada, e a mensagem
+  precisa chegar ao formulário como erro comum (no toast).
 
-> **Guard é UX, não segurança.** Ele esconde a tela; não protege o endpoint por
-> trás dela. Quem autoriza de verdade é o backend. Nunca dependa de um guard
-> para impedir acesso a dado.
+O redirecionamento é uma navegação "dura" (`window.location.href`), não
+`router.push`: recarregar descarta o cache do React Query e os formulários
+abertos.
 
-O [`useGuard`](../src/hooks/use-guard.ts) recebe `isLoading` e não redireciona
-enquanto a sessão carrega — sem isso, `canAccess` seria `false` no primeiro
-render e todo mundo cairia fora antes de a permissão ser conhecida.
+## Logout
 
-## Papéis
-
-Em [`src/libs/constants.ts`](../src/libs/constants.ts):
-
-```ts
-export enum Roles {
-  SYSTEM = 0,
-  ADMINISTRATOR = 1,
-  MANAGER = 2,
-  HR = 3,
-  EMPLOYEE = 4,
-}
-```
-
-São números porque é assim que o backend armazena. Nunca compare com o literal
-(`role === 1`) — use `Roles.ADMINISTRATOR`.
-
-Permissões são **predicados por capacidade**, não por tela:
-
-```ts
-export function canManageUsers(role?: Roles): boolean {
-  return role === Roles.SYSTEM || role === Roles.ADMINISTRATOR || role === Roles.HR;
-}
-```
-
-Assim uma tela nova reaproveita o predicado em vez de inventar outra regra.
-
-A função [`canAccess`](../src/libs/access.ts) combina papel e feature flag, e é
-pura: mesma resposta no servidor (proxy) e no cliente (sidebar, guards).
-
-## O que acontece quando a sessão expira
-
-Sem endpoint de refresh, o cookie simplesmente vence em 1 dia:
-
-1. A próxima chamada volta 401.
-2. O interceptor do axios redireciona para `/signin`.
-3. É uma navegação "dura" (`window.location.href`), não `router.push` — de
-   propósito: recarregar descarta todo o estado em memória (cache do Query,
-   stores, formulários). Sem isso, dados de quem saiu continuariam na tela
-   depois do login de outra pessoa.
-
-`/signout` faz o mesmo de forma ordenada: chama `DELETE /sessions`, limpa o
-cache com `queryClient.removeQueries()` e volta ao login — mesmo se o backend
-falhar.
-
-### Se o seu backend tiver refresh
-
-A mecânica está pronta em [`src/libs/api.ts`](../src/libs/api.ts): tentativa
-única por requisição, *single-flight* e serialização entre abas com
-`navigator.locks` (necessária quando o refresh token é de uso único, senão duas
-abas renovando juntas fazem a segunda falhar e deslogar o usuário).
-
-Basta apontar a constante:
-
-```ts
-const REFRESH_ENDPOINT: string | null = '/sessions/refresh';
-```
-
-Nada mais precisa mudar.
-
-## Testar sem backend
-
-Bloqueie tudo e libere o que interessa — ver
-[`tests/signin.spec.ts`](../tests/signin.spec.ts):
-
-```ts
-test.beforeEach(async ({ page }) => {
-  await page.route('**/api/**', (route) => route.abort());
-});
-```
-
-Sem o bloqueio geral, uma chamada não mockada fica pendurada até o timeout e,
-pior, o interceptor trata a falha como sessão expirada e redireciona no meio do
-teste. No Playwright a rota registrada por último vence, então mocks
-específicos vêm depois.
+`/signout` ([`signout/effect.tsx`](<../src/app/(unit)/signout/effect.tsx>))
+chama `DELETE /api/sessions`, limpa o cache com `queryClient.removeQueries()` e
+volta para `/signin` — mesmo se o backend falhar. Um `useRef` impede o Strict
+Mode de disparar o `DELETE` duas vezes.

@@ -1,6 +1,6 @@
 # triar-app — server
 
-API do triar-app em **Fastify + Knex (PostgreSQL) + TypeScript**, seguindo o padrão arquitetural `routes → controllers → cases`. Acompanha validação de ambiente com Zod, tratamento de erros centralizado, Docker Compose e documentação Swagger.
+API do Triar em **Fastify + Knex (PostgreSQL) + TypeScript**, seguindo o padrão arquitetural `routes → controllers → cases`. Faz a pré-triagem (regras de sinal grave + classificação por IA via OpenAI), lista as unidades por lotação e distância, gera o cartão de triagem (token assinado) e cuida do login da recepção.
 
 ## Requisitos
 
@@ -26,8 +26,25 @@ npm run dev -w @triar-app/server
 
 Servidor em `http://localhost:4000`:
 
-- `GET http://localhost:4000/health` → `{ "status": "ok", "uptime": <n>, "timestamp": "..." }`
 - `http://localhost:4000/docs` → Swagger UI (somente em `NODE_ENV=development`)
+
+## Rotas
+
+Todas sob o prefixo `/api`. 🔒 = exige o cookie de sessão da recepção (`POST /api/sessions`).
+
+| Rota | O que faz |
+|---|---|
+| `GET /health` | Health check (inclui o status do banco). |
+| `GET /symptoms` | Sintomas pré-definidos e as perguntas que cada um ativa. |
+| `POST /triage` | Regras de sinal grave → se nada for grave e vierem `answers`, a IA classifica o nível (2–5). Falha da IA → 503. |
+| `GET /units?level=&network=&lat=&lng=` | Unidades indicadas para o nível e a rede, por lotação e distância, com `notice`. |
+| `PATCH /units/:id/occupancy` 🔒 | Lotação da unidade do usuário logado (demo). |
+| `POST /cards` | Cartão de triagem: o resumo vai dentro de um JWT assinado (12 h). Nada é salvo em banco. |
+| `GET /cards/:token` 🔒 | Lê o resumo de um cartão (base do painel da unidade — ver `docs/pending.md`). |
+| `POST /sessions` / `DELETE /sessions` | Login por telefone + senha (cookie httpOnly `token`) / logout. |
+| `GET /sessions/me` 🔒 | Usuário logado e a unidade dele. |
+
+Os usuários e unidades do seed (fictícios, Caruaru-PE) estão no README da raiz.
 
 ## Scripts
 
@@ -56,8 +73,9 @@ src/
 ├── routes/                   # registro de rotas (agregadas em index.ts)
 ├── controllers/              # camada HTTP — valida com Zod e chama o case
 ├── cases/                    # regra de negócio + queries Knex
-├── middlewares/              # error-handler-middleware
-├── libs/                     # environments, connection (Knex), errors/app-errors
+├── middlewares/              # error-handler, protected-route (sessão)
+├── libs/                     # environments, connection, errors, ai (OpenAI), tokens (JWT), hash, geo
+├── @types/                   # augment do FastifyRequest (request.user)
 └── database/                 # config do Knex, migrations/, seeds/
 ```
 
@@ -72,6 +90,10 @@ O alias `~/` aponta para `src/`. Veja [CLAUDE.md](CLAUDE.md) para as convençõe
 | `HOST`          | `0.0.0.0`                                            | host do servidor                   |
 | `DATABASE_URL`  | `postgresql://docker:docker@localhost:5432/triar_app`         | string de conexão do PostgreSQL    |
 | `ORIGINS`       | `http://localhost:3000`                              | origens permitidas no CORS (CSV)   |
+| `SESSION_SECRET` | —                                                   | assina o cookie de sessão (igual ao do web, mín. 16) |
+| `CARD_SECRET`   | —                                                    | assina o token do cartão de triagem (mín. 16) |
+| `OPENAI_API_KEY` | —                                                   | chave da OpenAI; sem ela `POST /triage` responde 503 |
+| `OPENAI_MODEL`  | `gpt-5-mini` (no `.env.example`)                     | modelo usado na classificação      |
 
 ## Produção (Docker)
 

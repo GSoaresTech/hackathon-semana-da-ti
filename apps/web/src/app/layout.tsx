@@ -1,27 +1,34 @@
-import type { Metadata } from 'next';
-import { Open_Sans as FontSans } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Nunito } from 'next/font/google';
 
 import './globals.css';
 
 import { Toaster } from '~/components/ui/sonner';
 import { QueryClientProvider } from '~/providers/query-client-provider';
 
-const fontSans = FontSans({
+const fontNunito = Nunito({
   subsets: ['latin'],
-  variable: '--font-sans',
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-nunito',
 });
 
 export const metadata: Metadata = {
   title: {
-    template: '%s - RH',
-    default: 'RH',
+    template: '%s · Triar',
+    default: 'Triar',
   },
-  description: 'Sistema de gestão de recursos humanos',
+  description: 'Diz o que você sente. Mostra para onde ir — no SUS ou no plano.',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#1463c7',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="pt-BR" className={`${fontSans.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${fontNunito.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans">
         <QueryClientProvider>
           {children}

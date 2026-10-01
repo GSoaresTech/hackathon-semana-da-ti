@@ -4,136 +4,143 @@
 
 | Tipo de estado | Onde mora | Exemplos |
 |---|---|---|
-| Dado que veio do servidor | **TanStack Query** | lista de usuários, detalhe, sessão |
-| Estado de interface | **Zustand** | página atual, busca, filtros, seleção |
-| Estado de um componente só | `useState` | popover aberto, aba ativa |
+| Dado que o servidor pode devolver de novo | **TanStack Query** | catálogo de sintomas, lista de unidades, `getMe` |
+| Estado do fluxo / de interface | **Zustand** | rede escolhida, sintomas marcados, respostas, resultado da triagem |
+| Estado de um componente só | `useState` | card de unidade selecionado, exportando imagem |
 
-**Nunca copie resposta de API para dentro de uma store.** Duas fontes de
+**Nunca copie resposta de query para dentro de uma store.** Duas fontes de
 verdade divergem: uma mutação atualiza o cache do Query e a store fica com o
 valor velho, sem nada avisando.
 
-## O padrão
+O resultado de `POST /api/triage` é a exceção que confirma a regra: ele não é
+um dado que dê para buscar de novo (é a resposta a *estas* respostas, e a IA
+pode variar), então é estado do fluxo e mora no store.
 
-Uma store por tela de lista, colocada na pasta da rota
-(`users-store.ts` ao lado de `users-list.tsx`).
+## O store da triagem
 
-```ts
-import { create } from 'zustand';
-
-interface UsersStore {
-  page: number;
-  search: string;
-  situation: number | null;
-
-  reset: () => void;
-  setPage: (page: number) => void;
-  setSearch: (search: string) => void;
-  setSituation: (situation: number | null) => void;
-}
-
-const defaultStore: Pick<UsersStore, 'page' | 'search' | 'situation'> = {
-  page: 1,
-  search: '',
-  situation: null,
-};
-
-const useUsers = create<UsersStore>((set) => ({
-  ...defaultStore,
-
-  reset: () => set(defaultStore),
-  setPage: (page) => set({ page }),
-  setSearch: (search) => set({ search, page: 1 }),
-  setSituation: (situation) => set({ situation, page: 1 }),
-}));
-
-export { useUsers };
-```
-
-Três detalhes que não são acidentais:
-
-1. **`defaultStore` separado.** O `reset()` reaproveita o objeto em vez de
-   repetir os valores — e quando um filtro novo entrar, ele já é resetado junto.
-2. **Filtro volta para a página 1.** Manter a página 5 depois de filtrar
-   costuma levar a uma lista vazia que o usuário não sabe explicar.
-3. **Sem `situation: undefined`.** Use `null` para "sem filtro". `undefined`
-   some do objeto e atrapalha comparar chaves de query.
-
-## Consumindo
-
-```tsx
-const { page, search, setPage } = useUsers();
-```
-
-Desestruturar a store inteira faz o componente re-renderizar a cada mudança de
-qualquer campo. Para as listagens deste projeto isso é irrelevante — são poucos
-campos e o componente já re-renderiza quando a query muda.
-
-Se um dia uma store crescer e o custo aparecer, use `useShallow`:
-
-```tsx
-import { useShallow } from 'zustand/react/shallow';
-
-const { page, setPage } = useUsers(
-  useShallow((state) => ({ page: state.page, setPage: state.setPage })),
-);
-```
-
-## Filtros não vão para a URL
-
-Decisão consciente deste template: o estado de filtro vive só na store.
-
-- **Ganho:** simplicidade. Sem serializar, parsear e sincronizar.
-- **Custo:** a URL não reflete a tela. Não dá para compartilhar link de lista
-  filtrada, e o botão voltar não desfaz um filtro.
-
-Para compensar, toda listagem tem um `<recurso>-active-filters.tsx` mostrando
-chips do que está aplicado — senão a pessoa volta para a tela e não entende por
-que a lista está curta.
-
-Se um projeto precisar de link compartilhável, o lugar de mudar é um hook que
-espelhe a store em `searchParams`, mantendo a mesma API para os componentes.
-
-## Middlewares
-
-Nenhuma store do template usa middleware. Quando precisar:
+[`app/(triage)/triage-store.ts`](<../src/app/(triage)/triage-store.ts>) é o
+único store do app. Ele carrega o caso de uma tela para a outra:
 
 ```ts
-import { persist } from 'zustand/middleware';
-
-const useSidebar = create<SidebarStore>()(
+const useTriage = create<TriageState>()(
   persist(
-    (set) => ({ open: true, toggle: () => set((s) => ({ open: !s.open })) }),
-    { name: 'sidebar-state' },
+    (set) => ({
+      ...defaultStore,
+
+      setNetwork: (network) => set({ network }),
+      // Mudar a entrada invalida o que foi calculado a partir dela.
+      toggleSymptom: (id) =>
+        set((state) => ({
+          symptoms: state.symptoms.includes(id)
+            ? state.symptoms.filter((symptom) => symptom !== id)
+            : [...state.symptoms, id],
+          emergency: null,
+          result: null,
+        })),
+      // ...
+      // Mantém rede e localização: são escolhas da pessoa, não do caso.
+      reset: () =>
+        set((state) => ({ ...defaultStore, network: state.network, coords: state.coords })),
+    }),
+    {
+      name: 'triar:triage',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({ /* só os dados, sem as funções */ }),
+    },
   ),
 );
 ```
 
-Repare no `create<T>()(...)` — com middleware são **duas** chamadas; é assim
-que o TypeScript infere os tipos corretamente.
+Detalhes que não são acidentais:
 
-`persist` serve para preferência de interface (sidebar recolhida, tema). Não
-persista filtro de listagem: o usuário volta dias depois e encontra a lista
-filtrada sem lembrar por quê.
+1. **`defaultStore` separado.** O `reset()` reaproveita o objeto em vez de
+   repetir os valores — campo novo já nasce resetado junto.
+2. **Mudar a entrada zera o que dependia dela.** Marcar outro sintoma apaga
+   `emergency` e `result`; sem isso, a tela Resultado mostraria a avaliação de
+   sintomas que a pessoa já desmarcou.
+3. **`null` para "ainda não tem".** `undefined` some do objeto ao serializar e
+   atrapalha comparar.
+4. **`create<T>()(...)`** — com middleware são **duas** chamadas; é assim que o
+   TypeScript infere os tipos corretamente.
 
-> `persist` escreve no `localStorage` e roda só no cliente. Num componente
-> renderizado no servidor, o primeiro render usa o estado inicial e o valor
-> salvo entra depois da hidratação — o que pode causar um flash. Use
-> `skipHydration` ou renderize esse trecho apenas no cliente.
+### Por que `sessionStorage`
 
-## Estado de rascunho
+- Sobrevive a um recarregamento (a pessoa não perde o que respondeu).
+- **Some ao fechar a aba e nunca sai do aparelho.** É dado de saúde: LGPD. Não
+  troque por `localStorage` e não mande o store para o backend.
 
-Store também serve para acumular itens antes de enviar (um carrinho, uma
-seleção múltipla). Derive o tipo do item do retorno do service, para não
-redeclarar a mesma forma:
+## Hidratação: `useTriageHydrated`
+
+No servidor não existe `sessionStorage`, então o HTML sai com o estado padrão;
+o estado salvo só entra depois, no cliente. Ler o store antes disso faz a
+hidratação do React divergir do HTML — e uma tela recarregada redirecionaria
+para o início por engano.
+
+O sinal de "já carreguei" é lido com `useSyncExternalStore`, não com
+`useState` + `useEffect` (proibido pelo React Compiler):
 
 ```ts
-type User = Awaited<ReturnType<typeof listUsers>>['data'][number];
-
-interface SelectionStore {
-  selected: User[];
-  add: (user: User) => void;
-  clear: () => void;
+function useTriageHydrated(): boolean {
+  return useSyncExternalStore(
+    (onChange) => useTriage.persist.onFinishHydration(onChange),
+    () => useTriage.persist.hasHydrated(),
+    () => false, // servidor
+  );
 }
 ```
 
-Assim, quando o backend mudar o formato, o tipo acompanha sozinho.
+Use-o para desabilitar botões e mostrar skeleton até o store estar pronto —
+veja o `disabled={!hydrated}` em
+[`start-form.tsx`](<../src/app/(triage)/start-form.tsx>).
+
+## Guarda de etapa: `useTriageGuard`
+
+[`use-triage-guard.ts`](<../src/app/(triage)/use-triage-guard.ts>) impede abrir
+uma etapa sem ter passado pela anterior (ex.: `/result` direto pela URL):
+
+```ts
+const ready = useTriageGuard((state) => state.result !== null);
+
+if (!ready || !result) return <Screen />;
+```
+
+- Recebe um seletor que diz se a tela pode renderizar e, opcionalmente, para
+  onde voltar (padrão `/`).
+- Antes da hidratação devolve `false` **sem redirecionar**.
+- O `router.replace` fica num `useEffect`: navegar é efeito colateral (sistema
+  externo), não estado do React.
+
+Isso é UX do fluxo, não segurança — não há nada a proteger, é tudo do próprio
+aparelho.
+
+## Consumindo
+
+Selecione **um campo por chamada**:
+
+```tsx
+const network = useTriage((state) => state.network);
+const setNetwork = useTriage((state) => state.setNetwork);
+```
+
+Assim o componente só re-renderiza quando aquele campo muda. Desestruturar a
+store inteira (`const { network } = useTriage()`) re-renderiza a cada mudança
+de qualquer campo — e o store da triagem muda a cada tecla no relato.
+
+Para pegar vários campos de uma vez, use `useShallow`:
+
+```tsx
+import { useShallow } from 'zustand/react/shallow';
+
+const { symptoms, description } = useTriage(
+  useShallow((state) => ({ symptoms: state.symptoms, description: state.description })),
+);
+```
+
+## Store nova
+
+Antes de criar, pergunte se não é `useState` (só um componente usa) ou query
+(o servidor devolve de novo). Se for mesmo estado compartilhado entre telas,
+coloque a store na pasta do grupo de rota que a usa, como `triage-store.ts`,
+siga o mesmo formato (`defaultStore`, ações que invalidam o que dependia da
+entrada) e só use `persist` se o estado precisar sobreviver a um recarregamento
+— lembrando que, com dado de saúde, o storage é `sessionStorage`.

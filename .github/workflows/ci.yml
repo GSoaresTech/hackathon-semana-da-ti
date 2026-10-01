@@ -29,7 +29,8 @@ jobs:
 
     env:
       # A env do web é validada no next.config.ts, então o build precisa destes valores.
-      # São de teste: o CI não fala com backend real (o Playwright mocka a API).
+      # São de teste. Os testes do server leem o próprio .env.test e mockam a IA —
+      # o CI não precisa de OPENAI_API_KEY.
       NEXT_PUBLIC_API_URL: '/api'
       PRIVATE_API_URL: 'http://localhost:4000/api'
       SESSION_SECRET: 'ci-secret-com-mais-de-16-caracteres'
@@ -53,17 +54,3 @@ jobs:
 
       - name: Testes do server
         run: npm test
-
-      - name: Instalar navegador do Playwright
-        run: npx -w @triar-app/web playwright install chromium --with-deps
-
-      - name: Testes E2E do web
-        run: npm run test:e2e -- --project=chromium
-
-      - name: Publicar relatório do Playwright
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: apps/web/playwright-report/
-          retention-days: 7

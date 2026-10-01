@@ -20,6 +20,12 @@ class InvalidCredentialsError extends AppError {
   }
 }
 
+class UnauthorizedError extends AppError {
+  constructor(message?: string) {
+    super(message || 'Não autenticado', 401);
+  }
+}
+
 class ForbiddenError extends AppError {
   constructor(message: string = 'Não autorizado') {
     super(message, 403);
@@ -44,6 +50,12 @@ class InternalServerError extends AppError {
   }
 }
 
+class ServiceUnavailableError extends AppError {
+  constructor(message?: string) {
+    super(message || 'Serviço indisponível no momento', 503);
+  }
+}
+
 export {
   AlreadyExistsError,
   AppError,
@@ -52,4 +64,6 @@ export {
   InternalServerError,
   InvalidCredentialsError,
   NotFoundError,
+  ServiceUnavailableError,
+  UnauthorizedError,
 };

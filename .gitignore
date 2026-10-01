@@ -19,10 +19,6 @@ next-env.d.ts
 
 # testes
 coverage
-test-results
-playwright-report
-blob-report
-playwright/.cache
 
 # env (os exemplos e o .env.test do server são versionados)
 .env*
