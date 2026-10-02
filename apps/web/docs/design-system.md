@@ -196,9 +196,19 @@ as primitivas, em `components/ui/`.
 | 06 | Unidades | `/units` (`?level=1` vindo da Emergência) — [`units-view.tsx`](<../src/app/(triage)/units/units-view.tsx>) | `UnitsMap`, `UnitCard`, `UrgencyBadge`, `EmergencyButton` (compacto) | `GET /api/units?level=&network=&lat=&lng=` (refetch a cada 10 s) |
 | 07 | Cartão (3 de 3) | `/card` — [`card-view.tsx`](<../src/app/(triage)/card/card-view.tsx>) | `TriageCard`, `Button`, `EmergencyButton` (compacto) | `POST /api/cards` |
 | — | Login da recepção | `/signin` — [`signin/page.tsx`](<../src/app/(unit)/signin/page.tsx>) | `SignInForm` | `POST /api/sessions` |
-| — | Lotação da unidade | `/unit` — [`unit-occupancy.tsx`](<../src/app/(unit)/unit/unit-occupancy.tsx>) | `Screen`, rádio de lotação, `Button` | `GET /api/sessions/me`; `PATCH /api/units/:unitId/occupancy` |
-| 08 | Painel da unidade | **não implementado** | `UrgencyBadge`, tabela, detalhe | `GET /api/cards/:token` |
+| 08 | Painel · Pré-triagens | `/unit` — [`unit-pre-triages.tsx`](<../src/app/(unit)/unit/unit-pre-triages.tsx>) | `UnitShell`, `PanelHeader`, estado vazio | `GET /api/sessions/me` (lista de cartões vem do sessionStorage, sessões seguintes) |
+| — | Painel · Lotação | `/unit/occupancy` — [`occupancy-view.tsx`](<../src/app/(unit)/unit/occupancy/occupancy-view.tsx>) | `PanelHeader`, rádio de lotação | `GET /api/sessions/me`; `PATCH /api/units/:unitId/occupancy` |
+| — | Painel · Histórico do dia | `/unit/history` — [`unit-history.tsx`](<../src/app/(unit)/unit/history/unit-history.tsx>) | `PanelHeader`, estado vazio | — (conteúdo vem na sessão de "Chamar para triagem") |
 
-O painel da unidade (tela 08, leitura do QR na recepção) ficou fora do MVP. O
-que já existe e o que falta estão em
+O painel (tela 08) tem o esqueleto pronto nas três seções. A leitura do QR,
+a tabela de pré-triagens e o detalhe do cartão entram nas sessões seguintes.
+O que já existe e o que falta estão em
 [`docs/pending.md`](../../../docs/pending.md), na raiz do monorepo.
+
+### `PanelHeader`
+
+Família de cabeçalho das páginas do painel: `PanelHeader`, `PanelTitle`,
+`PanelDescription`, `PanelActions` em
+[`panel-header/index.tsx`](../src/components/panel-header/index.tsx). Mesmo
+padrão de composição do `Screen`, mas sem a coluna de 440px — o painel é a
+única área de desktop e as páginas usam a largura dada pelo `UnitShell`.

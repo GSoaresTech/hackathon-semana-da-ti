@@ -14,7 +14,7 @@ Ver `Triar-telas.pdf`, página 10. A recepção lê o QR do paciente e vê a pr�
 
 **Falta:**
 
-- [ ] Layout de painel (desktop): sidebar com **Pré-triagens**, **Lotação** e **Histórico do dia**. A tela de lotação atual vira um dos itens.
+- [x] Layout de painel (desktop): sidebar com **Pré-triagens**, **Lotação** e **Histórico do dia**. A tela de lotação atual vira um dos itens.
 - [ ] **Ler QR code**: leitura pela câmera (lib de scanner, ex.: `@zxing/browser` ou `BarcodeDetector` quando disponível), com alternativa para colar o token ou o link.
 - [ ] Tabela de pré-triagens com Nível (UrgencyBadge), Cartão (`code`), Sintomas, Idade e Chegada, ordenada por nível e depois por horário de leitura.
 - [ ] Detalhe do cartão: resumo completo, relato entre aspas e o bloco "Alerta orientado" com os `warning_signs`.
