@@ -49,8 +49,14 @@ jobs:
       - name: Lint (Biome)
         run: npm run ci:lint
 
-      - name: Checagem de tipos e build
-        run: npx turbo run typecheck build
+      # Em passos separados: rodando juntos, o `next typegen` (typecheck) e o
+      # `next build` escrevem ao mesmo tempo em apps/web/.next e o typegen
+      # falha de forma intermitente (ENOENT em .next/types/routes.d.ts).
+      - name: Checagem de tipos
+        run: npx turbo run typecheck
+
+      - name: Build
+        run: npx turbo run build
 
       - name: Testes do server
         run: npm test
