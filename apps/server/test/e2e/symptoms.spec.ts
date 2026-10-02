@@ -28,5 +28,15 @@ describe('GET /api/symptoms (e2e)', () => {
       questions: ['intensity'],
     });
     expect(response.body.symptoms).toContainEqual({ id: 'fever', label: 'Febre', questions: [] });
+    expect(response.body.symptoms).toContainEqual({
+      id: 'itching',
+      label: 'Coceira',
+      questions: [],
+    });
+    expect(response.body.symptoms).toContainEqual({
+      id: 'tingling',
+      label: 'Formigamento',
+      questions: [],
+    });
   });
 });

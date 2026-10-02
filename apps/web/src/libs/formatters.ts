@@ -1,3 +1,4 @@
+import type { Pregnant } from '~/libs/constants';
 import { dayjs } from '~/libs/dayjs';
 
 /**
@@ -56,11 +57,21 @@ function distance(km?: number | null, fallback = '') {
   return `${km.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`;
 }
 
+/** `34 anos · não gestante` — a gestação só aparece quando foi respondida. */
+function age(value?: number | null, pregnant?: Pregnant | null, fallback = '') {
+  if (value === null || value === undefined) return fallback;
+
+  const pregnancy = pregnant === 'yes' ? ' · gestante' : pregnant === 'no' ? ' · não gestante' : '';
+
+  return `${value} anos${pregnancy}`;
+}
+
 function nullable<T>(value?: T, fallback = 'Não informado') {
   return value === null || value === undefined || value === '' ? fallback : String(value);
 }
 
 const formatters = {
+  age,
   dateTime,
   distance,
   nullable,

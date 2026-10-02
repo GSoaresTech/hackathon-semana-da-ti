@@ -1,6 +1,21 @@
 import { type ClassValue, clsx } from 'clsx';
 import snakeCase from 'lodash/snakeCase';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/*
+ * Os tamanhos de texto do design system (`--text-*` no globals.css) são nomes
+ * próprios. Sem registrá-los, o tailwind-merge acha que `text-title` é cor e
+ * o descarta quando vem um `text-ink` depois.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [
+        { text: ['display', 'title', 'heading', 'body-lg', 'body', 'label', 'caption'] },
+      ],
+    },
+  },
+});
 
 /** Concatena classes do Tailwind resolvendo conflitos (`p-2 p-4` → `p-4`). */
 export function cn(...inputs: ClassValue[]) {

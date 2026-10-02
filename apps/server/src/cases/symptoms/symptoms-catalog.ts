@@ -31,6 +31,8 @@ const SYMPTOMS = [
   { id: 'skin_spots', label: 'Manchas na pele', questions: [] },
   { id: 'diarrhea', label: 'Diarreia', questions: [] },
   { id: 'injury', label: 'Machucado', questions: ['intensity'] },
+  { id: 'itching', label: 'Coceira', questions: [] },
+  { id: 'tingling', label: 'Formigamento', questions: [] },
 ] as const satisfies Symptom[];
 
 type SymptomId = (typeof SYMPTOMS)[number]['id'];

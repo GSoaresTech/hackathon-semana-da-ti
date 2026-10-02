@@ -32,7 +32,7 @@ const TriageCard: React.FC<TriageCardProps> = ({ card, summary, className }) => 
       label: 'Intensidade',
       value: summary.intensity !== null ? `${summary.intensity} de 10` : null,
     },
-    { label: 'Idade', value: formatAge(summary) },
+    { label: 'Idade', value: formatters.age(summary.age, summary.pregnant) },
   ].filter((row): row is { label: string; value: string } => Boolean(row.value));
 
   return (
@@ -86,14 +86,5 @@ const TriageCard: React.FC<TriageCardProps> = ({ card, summary, className }) => 
     </article>
   );
 };
-
-function formatAge(summary: CardSummary): string | null {
-  if (summary.age === null) return null;
-
-  const pregnancy =
-    summary.pregnant === 'yes' ? ' · gestante' : summary.pregnant === 'no' ? ' · não gestante' : '';
-
-  return `${summary.age} anos${pregnancy}`;
-}
 
 export { TriageCard };

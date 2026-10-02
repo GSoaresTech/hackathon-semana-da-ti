@@ -15,12 +15,19 @@ Ver `Triar-telas.pdf`, página 10. A recepção lê o QR do paciente e vê a pr�
 **Falta:**
 
 - [x] Layout de painel (desktop): sidebar com **Pré-triagens**, **Lotação** e **Histórico do dia**. A tela de lotação atual vira um dos itens.
-- [ ] **Ler QR code**: leitura pela câmera (lib de scanner, ex.: `@zxing/browser` ou `BarcodeDetector` quando disponível), com alternativa para colar o token ou o link.
-- [ ] Tabela de pré-triagens com Nível (UrgencyBadge), Cartão (`code`), Sintomas, Idade e Chegada, ordenada por nível e depois por horário de leitura.
-- [ ] Detalhe do cartão: resumo completo, relato entre aspas e o bloco "Alerta orientado" com os `warning_signs`.
-- [ ] Ações **Reclassificar** (o profissional ajusta o nível) e **Chamar para triagem**.
-- [ ] **LGPD:** a lista de cartões lidos fica só no navegador da recepção (memória ou `sessionStorage`), nunca no banco. O "Histórico do dia" segue a mesma regra, ou passa por uma decisão explícita de produto e jurídico antes de persistir qualquer coisa.
-- [ ] "Chegada" estimada: hoje o token não carrega a localização do paciente. Seria preciso incluir no cartão o `travel_minutes` da unidade escolhida.
+- [x] **Colar o cartão**: campo no topo de `/unit` que aceita o token do QR ou um link `/unit/cards/<token>` e chama `GET /api/cards/:token`.
+- [ ] **Ler QR code pela câmera** (lib de scanner, ex.: `@zxing/browser` ou `BarcodeDetector` quando disponível). Hoje só existe a colagem.
+- [x] Tabela de pré-triagens com Nível (UrgencyBadge), Cartão (`code`), Sintomas, Idade e Chegada, ordenada por nível e depois por horário de leitura.
+- [x] Detalhe do cartão: resumo completo, relato entre aspas e o bloco "Alerta orientado" com os `warning_signs`.
+- [x] **Chamar para triagem**: tira o cartão da fila e manda para o **Histórico do dia**.
+- [ ] **Reclassificar** (o profissional ajusta o nível).
+- [x] **LGPD:** a lista de cartões lidos e o "Histórico do dia" ficam só no `sessionStorage` da recepção (`app/(unit)/unit/unit-cards-store.ts`), nunca no banco. Persistir qualquer coisa passa antes por uma decisão explícita de produto e jurídico.
+- [x] "Chegada" estimada: o cartão carrega o `travel_minutes` da unidade escolhida, e a tabela mostra esse tempo.
+
+## Feedback de profissionais
+
+- [x] **Mais sintomas na segunda etapa:** entraram **Coceira** e **Formigamento** (`apps/server/src/cases/symptoms/symptoms-catalog.ts`).
+- Prof. Herycles Fortaleza testou e validou o que já existe: indicar as unidades próximas e quais estão lotadas, e a triagem com sintomas, idade e nível de dor.
 
 ## Melhorias anotadas
 

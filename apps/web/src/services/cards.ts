@@ -32,3 +32,10 @@ export async function createCard(input: CreateCardInput): Promise<Card> {
 
   return data;
 }
+
+/** Lê o cartão de um QR na recepção. Exige login: a rota é do painel da unidade. */
+export async function getCard(token: string): Promise<Omit<Card, 'token'>> {
+  const { data } = await api.get(`/cards/${encodeURIComponent(token)}`);
+
+  return data;
+}
