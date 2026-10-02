@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest, RouteShorthandOptions } from 'fastif
 import { z } from 'zod';
 
 import { get_card_case } from '~/cases/cards/get-card-case';
+import { card_summary_schema } from '~/controllers/cards/cards-schemas';
 import { protected_route_middleware } from '~/middlewares/protected-route-middleware';
 
 const get_card_params_schema = z.object({
@@ -12,17 +13,7 @@ const get_card_response_schema = z.object({
   code: z.string(),
   issued_at: z.string(),
   expires_at: z.string(),
-  card: z.object({
-    level: z.number(),
-    symptoms: z.array(z.string()),
-    description: z.string().nullable(),
-    onset: z.string().nullable(),
-    intensity: z.number().nullable(),
-    age: z.number().nullable(),
-    pregnant: z.string().nullable(),
-    warning_signs: z.array(z.string()),
-    destination: z.object({ id: z.string().nullable(), name: z.string() }).nullable(),
-  }),
+  card: card_summary_schema,
 });
 
 async function get_card_controller(request: FastifyRequest, reply: FastifyReply) {
