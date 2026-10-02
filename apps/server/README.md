@@ -55,7 +55,7 @@ npm run dev             # desenvolvimento com tsx watch
 npm run build           # compila para dist/ com tsup
 npm run start           # executa a build (node dist/server.js)
 npm run typecheck       # tsc --noEmit
-npm run test            # vitest (precisa do banco de teste, porta 5433)
+npm run test            # vitest (precisa do banco de teste, porta 5441)
 
 npm run migrate:make -- <nome>   # cria migration
 npm run migrate:latest        # aplica migrations pendentes
@@ -88,7 +88,7 @@ O alias `~/` aponta para `src/`. Veja [CLAUDE.md](CLAUDE.md) para as convençõe
 | `NODE_ENV`      | `development`                                        | ambiente de execução               |
 | `PORT`          | `4000`                                               | porta do servidor                  |
 | `HOST`          | `0.0.0.0`                                            | host do servidor                   |
-| `DATABASE_URL`  | `postgresql://docker:docker@localhost:5432/triar_app`         | string de conexão do PostgreSQL    |
+| `DATABASE_URL`  | `postgresql://docker:docker@localhost:5440/triar_app`         | string de conexão do PostgreSQL    |
 | `ORIGINS`       | `http://localhost:3000`                              | origens permitidas no CORS (CSV)   |
 | `SESSION_SECRET` | —                                                   | assina o cookie de sessão (igual ao do web, mín. 16) |
 | `CARD_SECRET`   | —                                                    | assina o token do cartão de triagem (mín. 16) |

@@ -23,7 +23,7 @@ npm run dev             # Servidor em desenvolvimento com hot reload (tsx watch)
 npm run build           # Compila para dist/ com tsup
 npm run start           # Executa a build de produção (node dist/server.js)
 npm run typecheck       # tsc --noEmit
-npm run test            # Vitest (banco de teste na porta 5433, ver docker-compose.yaml da raiz)
+npm run test            # Vitest (banco de teste na porta 5441, ver docker-compose.yaml da raiz)
 
 # Banco de dados (Knex)
 npm run migrate:make -- <nome>   # Cria um novo arquivo de migration (.ts)
@@ -71,7 +71,7 @@ Nenhuma regra de negócio fica nas rotas ou nos controllers. **Toda query Knex v
 
 ## Testes
 
-E2e de rota com supertest sobre `create_app()`, em `test/e2e/<dominio>.spec.ts` (ver `health.spec.ts` e `units.spec.ts`). Fixtures em `test/helpers.ts` (`create_unit`, `create_user`, `login`, `clear_database`). As specs rodam uma por vez (`fileParallelism: false`), porque compartilham o banco de teste (:5433, migrado no `test/global-setup.ts`).
+E2e de rota com supertest sobre `create_app()`, em `test/e2e/<dominio>.spec.ts` (ver `health.spec.ts` e `units.spec.ts`). Fixtures em `test/helpers.ts` (`create_unit`, `create_user`, `login`, `clear_database`). As specs rodam uma por vez (`fileParallelism: false`), porque compartilham o banco de teste (:5441, migrado no `test/global-setup.ts`).
 
 ## Práticas finais
 

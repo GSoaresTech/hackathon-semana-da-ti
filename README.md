@@ -21,7 +21,7 @@ npm install
 cp apps/server/.env.example apps/server/.env.local   # coloque sua OPENAI_API_KEY
 cp apps/web/.env.example apps/web/.env
 
-npm run db:up            # PostgreSQL (dev :5432, teste :5433)
+npm run db:up            # PostgreSQL (dev :5440, teste :5441)
 npm run migrate:latest
 npm run seed:run         # unidades fictícias em Caruaru-PE + usuários da recepção
 npm run start:dev        # sobe server e web juntos
@@ -81,7 +81,7 @@ Todos com a senha **`triar123`**:
 | `npm run start:dev` | `dev` de todas as apps (Turbo, em paralelo). |
 | `npm run start:build` | Build de todas as apps (com cache do Turbo). |
 | `npm run typecheck` | `tsc` em todas as apps. |
-| `npm run test` | Testes e2e das rotas do server (Vitest, precisa do banco de teste em :5433). |
+| `npm run test` | Testes e2e das rotas do server (Vitest, precisa do banco de teste em :5441). |
 | `npm run lint` / `npm run format` | Biome: checa / corrige lint, formatação e imports. |
 | `npm run db:up` | `docker compose up -d`. |
 | `npm run migrate:latest` / `npm run seed:run` | Atalhos para os scripts do server. |
