@@ -85,7 +85,11 @@ describe('POST /api/triage (e2e)', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ emergency: false, ...AI_RESULT });
+    expect(response.body).toEqual({
+      emergency: false,
+      ...AI_RESULT,
+      result_token: expect.any(String),
+    });
     expect(generate_json_mock).toHaveBeenCalledOnce();
     expect(generate_json_mock.mock.calls[0][0].input).toContain('Febre');
   });
