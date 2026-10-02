@@ -10,7 +10,7 @@ export type CardSummary = {
   age: number | null;
   pregnant: Pregnant | null;
   warningSigns: string[];
-  destination: { id: string | null; name: string } | null;
+  destination: { id: string | null; name: string; travelMinutes: number | null } | null;
 };
 
 type CreateCardInput = {

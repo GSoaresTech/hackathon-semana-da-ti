@@ -58,6 +58,11 @@ const TriageCard: React.FC<TriageCardProps> = ({ card, summary, className }) => 
         <div className="flex flex-col items-center">
           <span className="text-caption text-ink-muted">Destino</span>
           <span className="text-heading text-ink">{summary.destination.name}</span>
+          {summary.destination.travelMinutes !== null && (
+            <span className="text-caption text-ink-muted">
+              ≈ {summary.destination.travelMinutes} min de carro
+            </span>
+          )}
         </div>
       )}
 
