@@ -26,7 +26,7 @@ npm run start:build
 npm run typecheck
 npm run lint         # biome check
 npm run format       # biome check --write
-npm run test         # vitest do server (banco de teste :5433)
+npm run test         # vitest do server (banco de teste :5441)
 npm run db:up        # docker compose up -d
 npm run migrate:latest && npm run seed:run
 ```
