@@ -55,6 +55,16 @@ Abra http://localhost:3000. A documentação da API (Swagger) fica em http://loc
 - **LGPD:** nenhum dado de saúde é salvo em banco. O resumo da triagem vai dentro do token assinado do QR, e o estado do fluxo fica só no `sessionStorage` do aparelho.
 - **Lotação ao vivo:** a recepção troca a lotação em `/unit`, e a lista de unidades dos pacientes se atualiza sozinha a cada 10 s.
 
+### Cartões de demonstração
+
+Para apresentar o painel da unidade (ou desenvolver as telas da recepção) sem precisar da `OPENAI_API_KEY`, gere cinco cartões fictícios:
+
+```bash
+npm run demo:cards -w @triar-app/server
+```
+
+Imprime cinco cartões com níveis 2 a 5 (código, link `/unit/cards/<token>` e token para colar). Os cartões passam pelo mesmo fluxo assinado do app (`sign_triage_result` → `POST /api/cards`) e valem por 12 h, como qualquer cartão real.
+
 ### Usuários da recepção (seed)
 
 Todos com a senha **`triar123`**:
