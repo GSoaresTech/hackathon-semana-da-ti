@@ -41,12 +41,17 @@ const CardView: React.FC = () => {
   // exigir o token assinado, então peça para refazer a triagem.
   const resultToken = result?.resultToken ?? null;
 
+  // Destino salvo antes desta mudança não tinha `travelMinutes`: trata como null.
+  const normalizedDestination = destination
+    ? { ...destination, travelMinutes: destination.travelMinutes ?? null }
+    : null;
+
   // POST idempotente para o fluxo: o mesmo token reaproveita o cartão em cache
   // em vez de gerar outro a cada visita à tela.
   const { data, isError } = useQuery({
-    queryKey: [QUERIES.CREATE_CARD, { resultToken, destination }],
+    queryKey: [QUERIES.CREATE_CARD, { resultToken, destination: normalizedDestination }],
     queryFn: () =>
-      createCard({ resultToken: resultToken as string, destination: destination ?? null }),
+      createCard({ resultToken: resultToken as string, destination: normalizedDestination }),
     enabled: ready && resultToken !== null,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,

@@ -37,7 +37,7 @@ Um arquivo por recurso do backend. Toda chamada HTTP do projeto está aqui.
 | [`symptoms.ts`](../src/services/symptoms.ts) | `listSymptoms` | `GET /symptoms` |
 | [`triage.ts`](../src/services/triage.ts) | `createTriage` | `POST /triage` |
 | [`units.ts`](../src/services/units.ts) | `listUnits`, `updateOccupancy` | `GET /units`, `PATCH /units/:unitId/occupancy` |
-| [`cards.ts`](../src/services/cards.ts) | `createCard` | `POST /cards` (recebe `{ resultToken, destination }` e devolve o cartão com o resumo já montado pelo server) |
+| [`cards.ts`](../src/services/cards.ts) | `createCard` | `POST /cards` (recebe `{ resultToken, destination }` — `destination` tem `{ id, name, travelMinutes }` — e devolve o cartão com o resumo já montado pelo server) |
 | [`sessions.ts`](../src/services/sessions.ts) | `createSession`, `getMe`, `deleteSession` | `POST`/`DELETE /sessions`, `GET /sessions/me` |
 
 (Os caminhos são relativos a `NEXT_PUBLIC_API_URL`, ou seja, `/api/units` no

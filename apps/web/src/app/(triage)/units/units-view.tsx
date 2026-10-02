@@ -155,7 +155,13 @@ const UnitsView: React.FC<UnitsViewProps> = ({ emergencyLevel }) => {
               unit={unit}
               selected={unit.id === activeId}
               onSelect={() => setSelectedId(unit.id)}
-              onGo={() => setDestination({ id: unit.id, name: unit.name })}
+              onGo={() =>
+                setDestination({
+                  id: unit.id,
+                  name: unit.name,
+                  travelMinutes: unit.travelMinutes,
+                })
+              }
             />
           ))}
         </div>

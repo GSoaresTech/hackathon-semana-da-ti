@@ -11,7 +11,7 @@ vi.mock('~/libs/ai', () => ({ generate_json: vi.fn() }));
 const generate_json_mock = vi.mocked(generate_json);
 
 const PHONE = '81990000301';
-const DESTINATION = { id: null, name: 'UPA Boa Vista' };
+const DESTINATION = { id: null, name: 'UPA Boa Vista', travel_minutes: null };
 
 describe('/api/cards (e2e)', () => {
   let app: FastifyInstance;
@@ -120,6 +120,61 @@ describe('/api/cards (e2e)', () => {
     const response = await supertest(app.server).get(`/api/cards/${created.body.token}`);
 
     expect(response.status).toBe(401);
+  });
+
+  it('inclui travel_minutes do destino no cartão', async () => {
+    const result_token = await create_result_token();
+    const destination = { id: null, name: 'UPA Boa Vista', travel_minutes: 12 };
+
+    const created = await supertest(app.server)
+      .post('/api/cards')
+      .send({ result_token, destination });
+
+    expect(created.status).toBe(201);
+    expect(created.body.card.destination).toEqual(destination);
+
+    const cookie = await login(app, PHONE);
+    const read = await supertest(app.server)
+      .get(`/api/cards/${created.body.token}`)
+      .set('Cookie', cookie);
+
+    expect(read.status).toBe(200);
+    expect(read.body.card.destination).toEqual(destination);
+  });
+
+  it('aceita destino sem travel_minutes (null por padrão)', async () => {
+    const result_token = await create_result_token();
+
+    const created = await supertest(app.server)
+      .post('/api/cards')
+      .send({ result_token, destination: { id: null, name: 'UPA Boa Vista' } });
+
+    expect(created.status).toBe(201);
+    expect(created.body.card.destination).toEqual({
+      id: null,
+      name: 'UPA Boa Vista',
+      travel_minutes: null,
+    });
+  });
+
+  it('recusa travel_minutes fora do intervalo', async () => {
+    const result_token = await create_result_token();
+
+    const negative = await supertest(app.server)
+      .post('/api/cards')
+      .send({
+        result_token,
+        destination: { id: null, name: 'UPA Boa Vista', travel_minutes: -1 },
+      });
+    expect(negative.status).toBe(400);
+
+    const too_big = await supertest(app.server)
+      .post('/api/cards')
+      .send({
+        result_token,
+        destination: { id: null, name: 'UPA Boa Vista', travel_minutes: 2000 },
+      });
+    expect(too_big.status).toBe(400);
   });
 
   it('cartão inválido responde 400, não 401 (recepção não é deslogada)', async () => {

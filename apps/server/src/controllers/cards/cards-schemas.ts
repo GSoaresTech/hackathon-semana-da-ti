@@ -9,6 +9,9 @@ import { z } from 'zod';
 const destination_schema = z.object({
   id: z.string().nullable(),
   name: z.string().min(1).max(120),
+  // Estimativa de deslocamento calculada no cliente a partir da lista de unidades.
+  // Vai assinada dentro do cartão para a recepção estimar a chegada do paciente.
+  travel_minutes: z.number().int().min(0).max(1440).nullable().default(null),
 });
 
 const card_summary_schema = z.object({

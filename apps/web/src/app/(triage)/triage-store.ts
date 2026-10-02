@@ -15,7 +15,7 @@ import type { EmergencyResult, TriageAnswers, TriageResult } from '~/services/tr
 type Coords = { lat: number; lng: number };
 type GeolocationStatus = 'idle' | 'granted' | 'denied';
 
-type Destination = { id: string | null; name: string };
+type Destination = { id: string | null; name: string; travelMinutes: number | null };
 
 interface TriageState {
   network: Network;
