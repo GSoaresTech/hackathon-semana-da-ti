@@ -37,7 +37,7 @@ Um arquivo por recurso do backend. Toda chamada HTTP do projeto está aqui.
 | [`symptoms.ts`](../src/services/symptoms.ts) | `listSymptoms` | `GET /symptoms` |
 | [`triage.ts`](../src/services/triage.ts) | `createTriage` | `POST /triage` |
 | [`units.ts`](../src/services/units.ts) | `listUnits`, `updateOccupancy` | `GET /units`, `PATCH /units/:unitId/occupancy` |
-| [`cards.ts`](../src/services/cards.ts) | `createCard` | `POST /cards` |
+| [`cards.ts`](../src/services/cards.ts) | `createCard` | `POST /cards` (recebe `{ resultToken, destination }` e devolve o cartão com o resumo já montado pelo server) |
 | [`sessions.ts`](../src/services/sessions.ts) | `createSession`, `getMe`, `deleteSession` | `POST`/`DELETE /sessions`, `GET /sessions/me` |
 
 (Os caminhos são relativos a `NEXT_PUBLIC_API_URL`, ou seja, `/api/units` no
@@ -107,10 +107,10 @@ de mudar a lotação.
 
 O cartão de triagem é um `POST /cards`, mas
 [`card-view.tsx`](<../src/app/(triage)/card/card-view.tsx>) usa `useQuery` com
-`[QUERIES.CREATE_CARD, summary]` e `staleTime: Infinity`: o mesmo resumo
-reaproveita o cartão do cache em vez de gerar um token novo a cada visita à
-tela. Só vale para POST sem efeito colateral relevante (o backend não grava
-nada).
+`[QUERIES.CREATE_CARD, { resultToken, destination }]` e `staleTime: Infinity`:
+o mesmo `resultToken` reaproveita o cartão do cache em vez de gerar um token
+novo a cada visita à tela. Só vale para POST sem efeito colateral relevante (o
+backend não grava nada).
 
 ### Estados
 

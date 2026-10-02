@@ -31,6 +31,7 @@ const create_triage_response_schema = z.union([
     explanation: z.string(),
     instructions: z.array(z.string()),
     warning_signs: z.array(z.string()),
+    result_token: z.string(),
   }),
   z.object({
     emergency: z.literal(false),

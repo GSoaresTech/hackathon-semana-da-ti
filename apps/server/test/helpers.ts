@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import supertest from 'supertest';
 
+import type { TriageResultClaims } from '~/cases/triage/triage-types';
 import { connection } from '~/libs/connection';
 import { hash_password } from '~/libs/hash';
+import { sign_triage_result } from '~/libs/tokens';
 
 /*
  * Fixtures compartilhadas pelas specs e2e. Cada spec limpa o que criou.
@@ -56,4 +58,31 @@ async function clear_database(): Promise<void> {
   await connection('units').del();
 }
 
-export { clear_database, create_unit, create_user, login, TEST_PASSWORD };
+const DEFAULT_RESULT_CLAIMS: TriageResultClaims = {
+  level: 3,
+  warning_signs: ['Manchas roxas na pele'],
+  symptoms: ['fever', 'pain'],
+  description: 'Dor de cabeça forte desde ontem.',
+  onset: '1-2-days',
+  intensity: 7,
+  age: 34,
+  pregnant: 'no',
+};
+
+/**
+ * Gera um token de resultado assinado para as specs de cartão sem precisar
+ * mockar a IA em cada teste. Aceita overrides parciais.
+ */
+async function create_result_token(overrides?: Partial<TriageResultClaims>): Promise<string> {
+  return sign_triage_result({ ...DEFAULT_RESULT_CLAIMS, ...overrides });
+}
+
+export {
+  clear_database,
+  create_result_token,
+  create_unit,
+  create_user,
+  DEFAULT_RESULT_CLAIMS,
+  login,
+  TEST_PASSWORD,
+};

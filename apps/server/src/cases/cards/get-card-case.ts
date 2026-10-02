@@ -1,6 +1,6 @@
 import type { CardSummary } from '~/cases/cards/cards-types';
 import { card_code } from '~/cases/cards/create-card-case';
-import { UnauthorizedError } from '~/libs/errors/app-errors';
+import { BadRequestError } from '~/libs/errors/app-errors';
 import { verify_card } from '~/libs/tokens';
 
 type GetCardCaseInput = {
@@ -17,7 +17,9 @@ type GetCardCaseOutput = {
 async function get_card_case({ token }: GetCardCaseInput): Promise<GetCardCaseOutput> {
   const verified = await verify_card(token);
 
-  if (!verified) throw new UnauthorizedError('Cartão inválido ou expirado');
+  // 400 e não 401: o 401 fica reservado para falta de sessão (o interceptor do
+  // web desloga a recepção quando vê 401 em /unit).
+  if (!verified) throw new BadRequestError('Cartão inválido ou expirado');
 
   return {
     code: card_code(token),

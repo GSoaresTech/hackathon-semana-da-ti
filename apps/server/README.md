@@ -36,11 +36,11 @@ Todas sob o prefixo `/api`. 🔒 = exige o cookie de sessão da recepção (`POS
 |---|---|
 | `GET /health` | Health check (inclui o status do banco). |
 | `GET /symptoms` | Sintomas pré-definidos e as perguntas que cada um ativa. |
-| `POST /triage` | Regras de sinal grave → se nada for grave e vierem `answers`, a IA classifica o nível (2–5). Falha da IA → 503. |
+| `POST /triage` | Regras de sinal grave → se nada for grave e vierem `answers`, a IA classifica o nível (2–5) e devolve `result_token` (JWT, 12 h). Falha da IA → 503. |
 | `GET /units?level=&network=&lat=&lng=` | Unidades indicadas para o nível e a rede, por lotação e distância, com `notice`. |
 | `PATCH /units/:id/occupancy` 🔒 | Lotação da unidade do usuário logado (demo). |
-| `POST /cards` | Cartão de triagem: o resumo vai dentro de um JWT assinado (12 h). Nada é salvo em banco. |
-| `GET /cards/:token` 🔒 | Lê o resumo de um cartão (base do painel da unidade — ver `docs/pending.md`). |
+| `POST /cards` | Gera o cartão a partir de `{ result_token, destination }`. O resumo é montado pelo server e devolvido junto do JWT do cartão (12 h). Nada é salvo em banco. |
+| `GET /cards/:token` 🔒 | Lê o resumo de um cartão. Token inválido ou expirado → 400. |
 | `POST /sessions` / `DELETE /sessions` | Login por telefone + senha (cookie httpOnly `token`) / logout. |
 | `GET /sessions/me` 🔒 | Usuário logado e a unidade dele. |
 

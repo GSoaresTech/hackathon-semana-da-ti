@@ -29,6 +29,8 @@ export type TriageResult = {
   explanation: string;
   instructions: string[];
   warningSigns: string[];
+  /** JWT com o resumo clínico, usado como entrada para `POST /api/cards`. */
+  resultToken: string;
 };
 
 type CreateTriageOutput = EmergencyResult | TriageResult | { emergency: false };
