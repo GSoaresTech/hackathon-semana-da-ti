@@ -13,14 +13,21 @@ export type CardSummary = {
   destination: { id: string | null; name: string } | null;
 };
 
+type CreateCardInput = {
+  resultToken: string;
+  destination: CardSummary['destination'];
+};
+
 export type Card = {
   token: string;
   code: string;
   issuedAt: string;
   expiresAt: string;
+  /** Resumo que o server montou a partir do `resultToken` — o front mostra este. */
+  card: CardSummary;
 };
 
-export async function createCard(input: CardSummary): Promise<Card> {
+export async function createCard(input: CreateCardInput): Promise<Card> {
   const { data } = await api.post('/cards', input);
 
   return data;

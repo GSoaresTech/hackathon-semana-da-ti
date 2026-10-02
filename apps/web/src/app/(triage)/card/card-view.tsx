@@ -3,8 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { toPng } from 'html-to-image';
 import { DownloadIcon, LoaderIcon, Share2Icon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+
 import {
   Screen,
   ScreenContent,
@@ -16,67 +18,52 @@ import { TriageCard } from '~/components/triage-card';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import { QUERIES } from '~/libs/queries';
-import type { CardSummary } from '~/services/cards';
 import { createCard } from '~/services/cards';
-import { listSymptoms } from '~/services/symptoms';
 
 import { useTriage } from '../triage-store';
 import { useTriageGuard } from '../use-triage-guard';
 
 /**
  * Tela 07 · Cartão de triagem (3 de 3): resumo do caso com QR code para a
- * recepção. O resumo vai DENTRO do token assinado — nada de saúde é salvo em
- * servidor.
+ * recepção. O nível vem assinado pelo server (`resultToken`) e o resumo é o
+ * mesmo que vai dentro do token — nada de saúde é salvo em servidor.
  */
 const CardView: React.FC = () => {
   const ready = useTriageGuard((state) => state.result !== null);
   const result = useTriage((state) => state.result);
-  const symptoms = useTriage((state) => state.symptoms);
-  const description = useTriage((state) => state.description);
-  const answers = useTriage((state) => state.answers);
   const destination = useTriage((state) => state.destination);
+  const reset = useTriage((state) => state.reset);
+  const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const { data: catalog } = useQuery({
-    queryKey: [QUERIES.LIST_SYMPTOMS],
-    queryFn: listSymptoms,
-  });
+  // Resultado salvo antes do deploy não tem `resultToken`: o server passou a
+  // exigir o token assinado, então peça para refazer a triagem.
+  const resultToken = result?.resultToken ?? null;
 
-  const summary: CardSummary | null =
-    result && catalog
-      ? {
-          level: result.level,
-          symptoms: catalog.symptoms
-            .filter((symptom) => symptoms.includes(symptom.id))
-            .map((symptom) => symptom.label),
-          description: description.trim() || null,
-          onset: answers.onset ?? null,
-          intensity: answers.intensity ?? null,
-          age: answers.age ?? null,
-          pregnant: answers.pregnant ?? null,
-          warningSigns: result.warningSigns,
-          destination,
-        }
-      : null;
-
-  // POST idempotente para o fluxo: o mesmo resumo reaproveita o cartão em
-  // cache em vez de gerar outro token a cada visita à tela.
-  const { data: card, isError } = useQuery({
-    queryKey: [QUERIES.CREATE_CARD, summary],
-    queryFn: () => createCard(summary as CardSummary),
-    enabled: ready && summary !== null,
+  // POST idempotente para o fluxo: o mesmo token reaproveita o cartão em cache
+  // em vez de gerar outro a cada visita à tela.
+  const { data, isError } = useQuery({
+    queryKey: [QUERIES.CREATE_CARD, { resultToken, destination }],
+    queryFn: () =>
+      createCard({ resultToken: resultToken as string, destination: destination ?? null }),
+    enabled: ready && resultToken !== null,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
   });
 
+  function handleRetake() {
+    reset();
+    router.replace('/');
+  }
+
   async function renderImage(): Promise<File | null> {
-    if (!cardRef.current || !card) return null;
+    if (!cardRef.current || !data) return null;
 
     const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
     const blob = await (await fetch(dataUrl)).blob();
 
-    return new File([blob], `cartao-triagem-${card.code.replace('#', '')}.png`, {
+    return new File([blob], `cartao-triagem-${data.code.replace('#', '')}.png`, {
       type: 'image/png',
     });
   }
@@ -130,6 +117,23 @@ const CardView: React.FC = () => {
 
   if (!ready || !result) return <Screen />;
 
+  if (resultToken === null) {
+    return (
+      <Screen>
+        <ScreenHeader backHref="/result" title="Cartão de triagem" emergency />
+        <ScreenContent className="gap-4 pt-2">
+          <ScreenTitle>Mostre na recepção</ScreenTitle>
+          <p className="rounded-md bg-surface px-4 py-6 text-center text-body text-ink-muted">
+            Seu resultado expirou. Refaça a triagem para gerar o cartão.
+          </p>
+        </ScreenContent>
+        <ScreenFooter>
+          <Button onClick={handleRetake}>Refazer a triagem</Button>
+        </ScreenFooter>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <ScreenHeader backHref="/result" title="Cartão de triagem" emergency />
@@ -143,11 +147,11 @@ const CardView: React.FC = () => {
           </p>
         )}
 
-        {!isError && (!card || !summary) && <Skeleton className="h-[480px] rounded-lg" />}
+        {!isError && !data && <Skeleton className="h-[480px] rounded-lg" />}
 
-        {card && summary && (
+        {data && (
           <div ref={cardRef} className="bg-surface-subtle">
-            <TriageCard card={card} summary={summary} />
+            <TriageCard card={data} summary={data.card} />
           </div>
         )}
 
@@ -157,7 +161,7 @@ const CardView: React.FC = () => {
       </ScreenContent>
 
       <ScreenFooter className="grid grid-cols-2">
-        <Button variant="secondary" onClick={handleSave} disabled={!card || isExporting}>
+        <Button variant="secondary" onClick={handleSave} disabled={!data || isExporting}>
           {isExporting ? (
             <LoaderIcon className="animate-spin" aria-hidden="true" />
           ) : (
@@ -165,7 +169,7 @@ const CardView: React.FC = () => {
           )}
           Salvar imagem
         </Button>
-        <Button onClick={handleShare} disabled={!card || isExporting}>
+        <Button onClick={handleShare} disabled={!data || isExporting}>
           <Share2Icon aria-hidden="true" />
           Compartilhar
         </Button>
