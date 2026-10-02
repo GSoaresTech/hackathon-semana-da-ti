@@ -58,7 +58,7 @@ Nenhuma regra de negócio fica nas rotas ou nos controllers. **Toda query Knex v
 - **Erros:** Lance as classes de `~/libs/errors/app-errors` (`NotFoundError`, `AlreadyExistsError`, `ForbiddenError`, `BadRequestError`, ...). O error handler global converte em status HTTP.
 - **Validação:** Ocorre exclusivamente na camada de controller, com Zod.
 - **Idioma:** tudo o que é código fica em inglês — inclusive propriedades da API, tabelas, colunas, valores de enum e caminhos. Mensagens para o usuário, prompts da IA e comentários ficam em português.
-- **IA:** nunca chame o SDK da OpenAI direto; use `generate_json` de `~/libs/ai`. Em testes, mocke com `vi.mock('~/libs/ai')`.
+- **IA:** nunca chame o SDK da OpenAI direto; use `generate_json` de `~/libs/ai`. Em testes, substitua o módulo com `vi.mock('~/libs/ai')`.
 - **LGPD:** nenhum dado de saúde vai para o banco. O resumo da triagem só existe dentro do token do cartão (`~/libs/tokens`).
 
 ## Como adicionar um endpoint

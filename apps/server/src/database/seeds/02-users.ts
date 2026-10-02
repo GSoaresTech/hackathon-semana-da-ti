@@ -4,8 +4,8 @@ import { hash_password } from '~/libs/hash';
 
 /*
  * Um usuário de recepção por unidade presencial, todos com a senha `triar123`.
- * Telefones fictícios em sequência (81990000001, 81990000002, ...), na ordem
- * alfabética das unidades — veja a tabela no README da raiz.
+ * Telefones em sequência (81990000001, 81990000002, ...), na ordem
+ * alfabética das unidades — veja a tabela no instructions.md da raiz.
  */
 const DEFAULT_PASSWORD = 'triar123';
 

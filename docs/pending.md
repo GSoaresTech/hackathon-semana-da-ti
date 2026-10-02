@@ -33,6 +33,6 @@ Ver `Triar-telas.pdf`, página 10. A recepção lê o QR do paciente e vê a pr�
 
 - [x] **Integridade do nível no cartão:** `POST /api/triage` devolve `result_token` (JWT com `audience: triage-result`), e `POST /api/cards` só aceita esse token para montar o resumo. Adulterar o nível pelo DevTools não muda o cartão gerado.
 - [ ] **Deep link do QR:** o QR carrega só o token. Apontar para `/unit/cards/<token>` deixaria a câmera do celular da recepção abrir o painel direto.
-- [ ] **Unidades reais:** o seed é fictício (Caruaru-PE). Importar do CNES/OpenStreetMap e trocar a estimativa de tempo (linha reta a ~25 km/h) por uma API de rotas.
+- [ ] **Base de unidades:** importar do CNES/OpenStreetMap no lugar do seed (Caruaru-PE) e trocar a estimativa de tempo (linha reta a ~25 km/h) por uma API de rotas.
 - [ ] **Multi-idioma** e textos com revisão clínica das regras de sinal grave (`apps/server/src/cases/triage/triage-rules.ts`).
 - [ ] **Rate limit** em `POST /api/triage`, a única rota que custa dinheiro (chamada à OpenAI).

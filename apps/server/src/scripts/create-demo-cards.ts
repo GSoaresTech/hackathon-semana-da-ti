@@ -2,7 +2,7 @@ import { build_demo_cards } from '~/scripts/demo-cards';
 
 /*
  * CLI: `npm run demo:cards -w @triar-app/server`.
- * Imprime cinco cartões fictícios (válidos por 12 h) para colar no painel ou
+ * Imprime cinco cartões de demonstração (válidos por 12 h) para colar no painel ou
  * abrir pelo link direto do QR (sessão 09).
  */
 async function main() {

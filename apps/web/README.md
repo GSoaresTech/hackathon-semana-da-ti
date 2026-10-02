@@ -21,7 +21,7 @@ npm run start:dev                         # sobe web (porta 3000) e server
 
 O server precisa do banco e do seed antes (`npm run db:up`,
 `npm run migrate:latest`, `npm run seed:run`) — o passo a passo completo e os
-usuários de teste da recepção estão no [`README` da raiz](../../README.md).
+usuários de teste da recepção estão no [`instructions.md` da raiz](../../instructions.md).
 
 Para subir só o web: `npm run dev -w @triar-app/web` (o backend precisa estar
 rodando em `PRIVATE_API_URL`).

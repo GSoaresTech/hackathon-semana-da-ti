@@ -44,7 +44,7 @@ Todas sob o prefixo `/api`. 🔒 = exige o cookie de sessão da recepção (`POS
 | `POST /sessions` / `DELETE /sessions` | Login por telefone + senha (cookie httpOnly `token`) / logout. |
 | `GET /sessions/me` 🔒 | Usuário logado e a unidade dele. |
 
-Os usuários e unidades do seed (fictícios, Caruaru-PE) estão no README da raiz.
+Os usuários e unidades do seed (Caruaru-PE) estão no [`instructions.md`](../../instructions.md) da raiz.
 
 ## Scripts
 

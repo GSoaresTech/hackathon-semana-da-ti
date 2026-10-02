@@ -71,7 +71,7 @@ const DEFAULT_RESULT_CLAIMS: TriageResultClaims = {
 
 /**
  * Gera um token de resultado assinado para as specs de cartão sem precisar
- * mockar a IA em cada teste. Aceita overrides parciais.
+ * passar pela IA em cada teste. Aceita overrides parciais.
  */
 async function create_result_token(overrides?: Partial<TriageResultClaims>): Promise<string> {
   return sign_triage_result({ ...DEFAULT_RESULT_CLAIMS, ...overrides });

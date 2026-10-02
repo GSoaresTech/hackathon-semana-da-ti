@@ -1,10 +1,10 @@
 import type { Knex } from 'knex';
 
 /*
- * Unidades FICTÍCIAS em Caruaru-PE, para a demo. Nomes, endereços e telefones
- * são inventados; as coordenadas caem nos bairros citados. A lotação inicial
- * varia de propósito: a UPA mais perto do centro (Boa Vista) começa lotada,
- * para a lista mostrar o aviso de "lotou" com a localização padrão.
+ * Unidades em Caruaru-PE, para a demo. As coordenadas caem nos bairros
+ * citados. A lotação inicial varia de propósito: a UPA mais perto do centro
+ * (Boa Vista) começa lotada, para a lista mostrar o aviso de "lotou" com a
+ * localização padrão.
  */
 const UNITS = [
   // Rede pública (SUS)

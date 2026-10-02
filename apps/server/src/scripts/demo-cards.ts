@@ -3,7 +3,7 @@ import type { TriageResultClaims } from '~/cases/triage/triage-types';
 import { sign_triage_result } from '~/libs/tokens';
 
 /*
- * Cartões fictícios para apresentar o painel da unidade e desenvolver as
+ * Cartões de demonstração para apresentar o painel da unidade e desenvolver as
  * sessões 05–11 sem OPENAI_API_KEY. Os casos espelham a tela 08 do PDF e são
  * gerados pelo mesmo caminho do fluxo real (`sign_triage_result` →
  * `create_card_case`), para que o cartão de demonstração passe pelas mesmas
