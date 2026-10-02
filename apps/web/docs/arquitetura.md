@@ -35,7 +35,11 @@ src/
 │  │  └─ use-triage-guard.ts
 │  ├─ (unit)/               área da recepção
 │  │  ├─ signin/            /signin
-│  │  ├─ unit/              /unit (lotação) — protegida pelo proxy.ts
+│  │  ├─ unit/              painel (desktop) — protegido pelo proxy.ts
+│  │  │  ├─ layout.tsx      sidebar + unit-shell.tsx (único layout do app)
+│  │  │  ├─ page.tsx        /unit (Pré-triagens)
+│  │  │  ├─ occupancy/      /unit/occupancy (Lotação)
+│  │  │  └─ history/        /unit/history (Histórico do dia)
 │  │  └─ signout/           /signout
 │  ├─ layout.tsx            fonte, QueryClientProvider, Toaster
 │  ├─ globals.css           tokens do design system (@theme)
@@ -81,13 +85,17 @@ usados por todas as telas do fluxo e por nenhuma outra.
 app/
 ├─ (triage)/   paciente, anônimo: /, /symptoms, /questions, /emergency,
 │              /result, /units, /card
-└─ (unit)/     recepção: /signin, /unit, /signout
+└─ (unit)/     recepção: /signin, /unit, /unit/occupancy,
+               /unit/history, /signout
 ```
 
 Parênteses não entram na URL — servem para agrupar rotas e colocar código
-compartilhado ao lado delas. Nenhum dos dois grupos tem `layout.tsx` próprio:
-cada tela monta seu esqueleto com `Screen` (ver
-[`componentes.md`](componentes.md)).
+compartilhado ao lado delas. Os grupos de rota não têm `layout.tsx`
+próprio — cada tela do fluxo do paciente monta seu esqueleto com `Screen`
+(ver [`componentes.md`](componentes.md)). A exceção é `/unit/**`, que tem o
+`unit/layout.tsx` com o `UnitShell` (menu lateral no desktop e abas no
+celular): o painel é a única área do app com várias telas desktop
+compartilhando um esqueleto.
 
 > Estar dentro de `(unit)/` **não protege** a rota. Quem protege é o
 > `proxy.ts`, e só o que está em `/unit/**`. Ver

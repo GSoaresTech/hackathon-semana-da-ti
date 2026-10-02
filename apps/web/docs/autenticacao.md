@@ -6,8 +6,9 @@
 cadastro nem cookie de sessão. O estado da triagem fica no `sessionStorage`
 (ver [`estado.md`](estado.md)).
 
-Só a **recepção das unidades** entra, para atualizar a lotação em `/unit`. É um
-login simples: telefone + senha, e cada conta pertence a uma unidade.
+Só a **recepção das unidades** entra, para usar o painel em `/unit` (lê os
+cartões, acompanha a fila e troca a lotação em `/unit/occupancy`). É um login
+simples: telefone + senha, e cada conta pertence a uma unidade.
 
 ## O contrato do backend
 
@@ -46,8 +47,9 @@ verifySession(token?: string): Promise<Session | null>
 - Normaliza o payload (`unit_id` → `unitId`): o JWT não passa pelo interceptor
   do axios.
 - É `server-only`. Client Component que precisa dos dados da sessão chama
-  `getMe()` com `useQuery` e `QUERIES.GET_ME` — é o que faz
-  [`unit-occupancy.tsx`](<../src/app/(unit)/unit/unit-occupancy.tsx>).
+  `getMe()` com `useQuery` e `QUERIES.GET_ME` — é o que faz o
+  [`unit-shell.tsx`](<../src/app/(unit)/unit/unit-shell.tsx>) e as páginas do
+  painel.
 
 ## O proxy (antigo middleware)
 

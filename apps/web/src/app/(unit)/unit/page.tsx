@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { UnitOccupancy } from './unit-occupancy';
+import { UnitPreTriages } from './unit-pre-triages';
 
-export const metadata: Metadata = { title: 'Lotação da unidade' };
+export const metadata: Metadata = { title: 'Pré-triagens' };
 
-export default function UnitPage() {
-  return <UnitOccupancy />;
+export default function UnitPreTriagesPage() {
+  return <UnitPreTriages />;
 }
