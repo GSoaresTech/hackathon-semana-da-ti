@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeftIcon } from 'lucide-react';
+import { ArrowDownUpIcon, ChevronLeftIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { EmergencyButton } from '~/components/emergency-button';
@@ -126,9 +126,10 @@ const UnitsView: React.FC<UnitsViewProps> = ({ emergencyLevel }) => {
               </label>
             ))}
           </div>
-          <span className="rounded-pill border border-border-control bg-surface px-3 py-2 text-caption text-ink">
-            Por lotação e distância
-          </span>
+          <p className="flex items-center gap-1.5 text-caption text-ink-muted">
+            <ArrowDownUpIcon className="size-3.5" aria-hidden="true" />
+            Ordenadas por lotação e distância
+          </p>
         </div>
 
         {data?.notice && (
