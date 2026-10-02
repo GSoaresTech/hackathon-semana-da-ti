@@ -18,7 +18,8 @@
     "seed:run": "NODE_OPTIONS='--import tsx' knex seed:run",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "vitest run test/e2e"
+    "test:e2e": "vitest run test/e2e",
+    "demo:cards": "tsx src/scripts/create-demo-cards.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
