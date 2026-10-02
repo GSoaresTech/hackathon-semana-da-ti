@@ -21,7 +21,7 @@ export default async function SignInPage({ searchParams }: PageProps<'/signin'>)
         <div className="flex flex-col gap-1">
           <ScreenTitle>Área da unidade</ScreenTitle>
           <p className="text-body text-ink-muted">
-            Entre com o telefone e a senha da recepção para atualizar a lotação.
+            Entre com o telefone e a senha da recepção para acessar o painel da unidade.
           </p>
         </div>
 
